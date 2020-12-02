@@ -32,9 +32,9 @@ pub fn file2nums(filename: &str) -> io::Result<Vec<isize>> {
     Ok(nums)
 }
 
-pub fn pass_counter<F: Fn(&str) -> bool>(passes_check: F) -> io::Result<String> {
+pub fn pass_counter<F: Fn(&str) -> bool>(filename: &str, passes_check: F) -> io::Result<String> {
     let mut total = 0;
-    for_each_line("day_2_input.txt", |line| Ok({
+    for_each_line(filename, |line| Ok({
         if passes_check(line) {
             total += 1;
         }
