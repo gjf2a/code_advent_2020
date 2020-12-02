@@ -1,14 +1,12 @@
-use std::{io, fs};
-use std::io::BufRead;
+use std::io;
+use crate::pass_counter;
 
 pub fn solve_1() -> io::Result<String> {
-    let mut total = 0;
-    for line in io::BufReader::new(fs::File::open("day_2_input.txt")?).lines() {
-        if line_valid_password_1(line?.as_str()) {
-            total += 1;
-        }
-    }
-    Ok(format!("{}", total))
+    pass_counter(line_valid_password_1)
+}
+
+pub fn solve_2() -> io::Result<String> {
+    pass_counter(line_valid_password_2)
 }
 
 fn line_valid_password_1(line: &str) -> bool {
@@ -61,5 +59,10 @@ mod tests {
         assert!(line_valid_password_2("1-3 a: abcde"));
         assert!(!line_valid_password_2("1-3 b: cdefg"));
         assert!(!line_valid_password_2("2-9 c: ccccccccc"));
+    }
+
+    #[test]
+    fn test_part_2() {
+        assert_eq!(solve_2().unwrap(), "634");
     }
 }
