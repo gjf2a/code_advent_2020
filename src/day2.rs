@@ -27,7 +27,7 @@ fn line_valid_password_2(line: &str) -> bool {
     let (lo, hi, letter, password) = parse_password_line(line);
     let password = password.as_bytes();
     in_bounds(lo, password) && in_bounds(hi, password) &&
-        (at(lo, password, letter) != at(hi, password, letter))
+        at(lo, password, letter) != at(hi, password, letter)
 }
 
 fn parse_password_line(line: &str) -> (usize,usize,char,&str) {
