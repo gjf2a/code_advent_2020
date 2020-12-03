@@ -27,12 +27,9 @@ fn solve_slope(filename: &str, right: usize, down: usize) -> io::Result<usize> {
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    let product = solve_slope(filename, 1, 1)? *
-        solve_slope(filename, 3, 1)? *
-        solve_slope(filename, 5, 1)? *
-        solve_slope(filename, 7, 1)? *
-        solve_slope(filename, 1, 2)?;
-    Ok(format!("{}", product))
+    Ok(format!("{}", [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)].iter()
+        .map(|(r, d)| solve_slope(filename, *r, *d).unwrap())
+        .product::<usize>()))
 }
 
 #[cfg(test)]
