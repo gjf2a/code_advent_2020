@@ -1,5 +1,6 @@
 mod day1;
 mod day2;
+mod day3;
 
 use std::{env,fs,io};
 use std::io::BufRead;
@@ -13,6 +14,8 @@ fn main() -> io::Result<()> {
             "1_2" => day1::solve_2()?,
             "2_1" => day2::solve_1()?,
             "2_2" => day2::solve_2()?,
+            "3_1" => day3::solve_1("day_3_input.txt")?,
+            "3_2" => day3::solve_2("day_3_input.txt")?,
             _ => "Unrecognized problem".to_string()
         }
     });
