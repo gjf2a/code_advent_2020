@@ -44,6 +44,6 @@ mod tests {
 
     #[test]
     fn example_2() {
-        assert_eq!(solve_2("day_3_example.txt").unwrap(), "336")
+        assert_eq!(solve_2("day_3_example.txt").unwrap(), "168")
     }
 }
