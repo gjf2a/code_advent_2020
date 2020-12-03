@@ -15,10 +15,12 @@ fn solve_slope(filename: &str, right: usize, down: usize) -> io::Result<usize> {
     let mut y_pos = 0;
     for_each_line(filename, |line| Ok({
         let line = line.as_bytes();
-        if y_pos > 0 && y_pos % down == 0 && is_tree(line[x_pos % line.len()]) {
-            tree_count += 1;
+        if y_pos % down == 0 {
+            if y_pos > 0 && is_tree(line[x_pos % line.len()]) {
+                tree_count += 1;
+            }
+            x_pos += right;
         }
-        x_pos += right;
         y_pos += 1;
     }))?;
     Ok(tree_count)
@@ -44,6 +46,11 @@ mod tests {
 
     #[test]
     fn example_2() {
-        assert_eq!(solve_2("day_3_example.txt").unwrap(), "168")
+        assert_eq!(solve_2("day_3_example.txt").unwrap(), "336")
+    }
+
+    #[test]
+    fn example_3() {
+        assert_eq!(solve_slope("day_3_example.txt", 1, 2).unwrap(), 2)
     }
 }
