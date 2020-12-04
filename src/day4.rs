@@ -24,16 +24,16 @@ fn fields_and_values_from(filename: &str) -> io::Result<Vec<BTreeMap<String,Stri
     Ok(result)
 }
 
-fn stringify(lit: Vec<BTreeMap<&str,&str>>) -> Vec<BTreeMap<String,String>> {
-    let mut result = Vec::new();
-    for m in lit.iter() {
-        let mut ified = BTreeMap::new();
-        for (k, v) in m.iter() {
-            ified.insert(k.to_string(), v.to_string());
-        }
-        result.push(ified);
+fn stringify_map(m: &BTreeMap<&str,&str>) -> BTreeMap<String,String> {
+    let mut ified = BTreeMap::new();
+    for (k, v) in m.iter() {
+        ified.insert(k.to_string(), v.to_string());
     }
-    result
+    ified
+}
+
+fn stringify(lit: Vec<BTreeMap<&str,&str>>) -> Vec<BTreeMap<String,String>> {
+    lit.iter().map(|m| stringify_map(m)).collect()
 }
 
 #[cfg(test)]
