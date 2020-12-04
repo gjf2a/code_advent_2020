@@ -25,11 +25,7 @@ fn fields_and_values_from(filename: &str) -> io::Result<Vec<BTreeMap<String,Stri
 }
 
 fn stringify_map(m: &BTreeMap<&str,&str>) -> BTreeMap<String,String> {
-    let mut ified = BTreeMap::new();
-    for (k, v) in m.iter() {
-        ified.insert(k.to_string(), v.to_string());
-    }
-    ified
+    m.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
 }
 
 fn stringify(lit: Vec<BTreeMap<&str,&str>>) -> Vec<BTreeMap<String,String>> {
