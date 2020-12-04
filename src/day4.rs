@@ -3,11 +3,11 @@ use crate::for_each_line;
 use std::collections::BTreeMap;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    solve(filename, has_all_puzzle_1)
+    solve(filename, has_all)
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    solve(filename, valid_puzzle_2)
+    solve(filename, all_valid)
 }
 
 fn solve<P: Fn(&BTreeMap<String,String>) -> bool>(filename: &str, predicate: P) -> io::Result<String> {
@@ -20,13 +20,13 @@ fn solve_count<P: Fn(&BTreeMap<String,String>) -> bool>(filename: &str, predicat
         .count())
 }
 
-fn has_all_puzzle_1(passport: &BTreeMap<String,String>) -> bool {
+fn has_all(passport: &BTreeMap<String,String>) -> bool {
     ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"].iter()
         .all(|field| passport.contains_key(*field))
 }
 
-fn valid_puzzle_2(passport: &BTreeMap<String,String>) -> bool {
-    passport.iter().all(|(k, v)| valid_field(k.as_str(), v.as_str()))
+fn all_valid(passport: &BTreeMap<String,String>) -> bool {
+    has_all(passport) && passport.iter().all(|(k, v)| valid_field(k.as_str(), v.as_str()))
 }
 
 fn valid_field(field: &str, value: &str) -> bool {
@@ -61,7 +61,7 @@ fn validate_hair(value: &str) -> bool {
     let mut v_iter = value.chars();
     match v_iter.next() {
         None => false,
-        Some(c) => c == '#' && v_iter.all(|c| c.is_digit(16))
+        Some(c) => c == '#' && v_iter.all(|c| c.is_digit(10) || c >= 'a' && c <= 'f')
     }
 }
 
@@ -143,6 +143,11 @@ mod tests {
             ("pid", "0123456789")].iter() {
             assert!(!valid_field(field, value));
         }
+    }
+
+    #[test]
+    fn test_2_example_1() {
+        assert_eq!(solve_2("day_4_example.txt").unwrap(), "2");
     }
 
     #[test]
