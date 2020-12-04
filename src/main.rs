@@ -19,6 +19,7 @@ fn main() -> io::Result<()> {
             "2_2" => day2::solve_2()?,
             "3_1" => day3::solve_1("day_3_input.txt")?,
             "3_2" => day3::solve_2("day_3_input.txt")?,
+            "4_1" => day4::solve_1("day_4_input.txt")?,
             _ => "Unrecognized problem".to_string()
         }
     });
