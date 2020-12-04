@@ -98,17 +98,17 @@ fn fields_and_values_from(filename: &str) -> io::Result<Vec<BTreeMap<String,Stri
     Ok(result)
 }
 
-fn stringify_map(m: &BTreeMap<&str,&str>) -> BTreeMap<String,String> {
-    m.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
-}
-
-fn stringify_vec_map(lit: Vec<BTreeMap<&str,&str>>) -> Vec<BTreeMap<String,String>> {
-    lit.iter().map(|m| stringify_map(m)).collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn stringify_map(m: &BTreeMap<&str,&str>) -> BTreeMap<String,String> {
+        m.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+    }
+
+    fn stringify_vec_map(lit: Vec<BTreeMap<&str,&str>>) -> Vec<BTreeMap<String,String>> {
+        lit.iter().map(|m| stringify_map(m)).collect()
+    }
 
     #[test]
     fn map_test() {
