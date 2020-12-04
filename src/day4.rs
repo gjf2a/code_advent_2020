@@ -11,13 +11,10 @@ pub fn solve_2(filename: &str) -> io::Result<String> {
 }
 
 fn solve<P: Fn(&BTreeMap<String,String>) -> bool>(filename: &str, predicate: P) -> io::Result<String> {
-    Ok(format!("{}", solve_count(filename, predicate)?))
-}
-
-fn solve_count<P: Fn(&BTreeMap<String,String>) -> bool>(filename: &str, predicate: P) -> io::Result<usize> {
-    Ok(fields_and_values_from(filename)?.iter()
+    let count = fields_and_values_from(filename)?.iter()
         .filter(|m| predicate(*m))
-        .count())
+        .count();
+    Ok(format!("{}", count))
 }
 
 fn has_all(passport: &BTreeMap<String,String>) -> bool {
