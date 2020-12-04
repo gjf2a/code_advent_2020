@@ -14,7 +14,7 @@ fn solve<P: Fn(&BTreeMap<String,String>) -> bool>(filename: &str, predicate: P) 
     let count = fields_and_values_from(filename)?.iter()
         .filter(|m| predicate(*m))
         .count();
-    Ok(format!("{}", count))
+    Ok(count.to_string())
 }
 
 fn has_all(passport: &BTreeMap<String,String>) -> bool {
@@ -86,7 +86,7 @@ fn fields_and_values_from(filename: &str) -> io::Result<Vec<BTreeMap<String,Stri
                 let mut parts = pair.split(':');
                 let key = parts.next().unwrap();
                 let value = parts.next().unwrap();
-                current.insert(key.to_string(), value.to_string());
+                current.insert(key.to_owned(), value.to_owned());
             }
         }
     }))?;
