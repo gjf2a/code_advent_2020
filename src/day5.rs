@@ -30,22 +30,19 @@ struct BinarySearcher<T:Eq+Copy+Display> {
 }
 
 impl <T:Eq+Copy+Display> BinarySearcher<T> {
-    pub fn mid(&self) -> usize {(self.min + self.max) / 2}
-
     pub fn test(&mut self, test_val: T) {
+        let mid = (self.min + self.max) / 2;
         if test_val == self.lo {
-            self.max = self.mid();
+            self.max = mid;
         } else if test_val == self.hi {
-            self.min = self.mid() + 1;
+            self.min = mid + 1;
         } else {
             panic!("Illegal value: {}", test_val);
         }
     }
 
-    pub fn done(&self) -> bool {self.min == self.max}
-
     pub fn value(&self) -> usize {
-        assert!(self.done());
+        assert!(self.min == self.max);
         self.min
     }
 }
