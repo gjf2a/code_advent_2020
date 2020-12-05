@@ -30,8 +30,6 @@ struct BinarySearcher<T:Eq+Copy+Display> {
 }
 
 impl <T:Eq+Copy+Display> BinarySearcher<T> {
-    pub fn new(min: usize, max: usize, lo: T, hi: T) -> Self {BinarySearcher {min, max, lo, hi}}
-
     pub fn mid(&self) -> usize {(self.min + self.max) / 2}
 
     pub fn test(&mut self, test_val: T) {
@@ -54,7 +52,7 @@ impl <T:Eq+Copy+Display> BinarySearcher<T> {
 
 fn decode_str(encoding: &str, lo: char, hi: char) -> usize {
     let encoding = encoding.as_bytes();
-    let mut searcher = BinarySearcher::new(0, (1 << encoding.len()) - 1, lo as u8, hi as u8);
+    let mut searcher = BinarySearcher  {min: 0, max: (1 << encoding.len()) - 1, lo: lo as u8, hi: hi as u8};
     for code in encoding.iter() {
         searcher.test(*code);
     }
