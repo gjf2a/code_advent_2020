@@ -7,7 +7,8 @@ mod day4;
 mod day5;
 
 use std::{env,fs,io};
-use std::io::BufRead;
+use std::io::{BufRead, Lines, BufReader};
+use std::fs::File;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -22,14 +23,20 @@ fn main() -> io::Result<()> {
             "3_2" => day3::solve_2("day_3_input.txt")?,
             "4_1" => day4::solve_1("day_4_input.txt")?,
             "4_2" => day4::solve_2("day_4_input.txt")?,
+            "5_1" => day5::solve_1()?,
+            "5_2" => day5::solve_2()?,
             _ => "Unrecognized problem".to_string()
         }
     });
     Ok(())
 }
 
+pub fn all_lines(filename: &str) -> io::Result<Lines<BufReader<File>>> {
+    Ok(io::BufReader::new(fs::File::open(filename)?).lines())
+}
+
 pub fn for_each_line<F: FnMut(&str) -> io::Result<()>>(filename: &str, mut line_processor: F) -> io::Result<()> {
-    for line in io::BufReader::new(fs::File::open(filename)?).lines() {
+    for line in all_lines(filename)? {
         line_processor(line?.as_str())?;
     }
     Ok(())

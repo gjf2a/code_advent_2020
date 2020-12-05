@@ -1,3 +1,29 @@
+use std::io;
+use crate::all_lines;
+use std::io::{BufReader, Lines};
+use std::fs::File;
+use std::iter::Map;
+
+fn seat_ids() -> io::Result<Map<Lines<BufReader<File>>, fn(io::Result<String>) -> usize>> {
+    Ok(all_lines("day_5_input.txt")?
+        .map(|line|
+            BoardingPass::from(line.unwrap().as_str()).unwrap().seat_id()))
+}
+
+pub fn solve_1() -> io::Result<String> {
+    Ok(seat_ids()?.max().unwrap().to_string())
+}
+
+pub fn solve_2() -> io::Result<String> {
+    let ids: Vec<usize> = seat_ids()?.collect();
+    for i in 1..ids.len() {
+        if ids[i-1] + 2 == ids[i] {
+            return Ok((ids[i-1] + 1).to_string())
+        }
+    }
+    panic!("This shouldn't happen; the seat isn't there")
+}
+
 fn decode_str(encoding: &str, lo: char, hi: char) -> Option<usize> {
     let encoding = encoding.as_bytes();
     let lo = lo as u8;
