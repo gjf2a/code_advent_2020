@@ -9,21 +9,33 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(format!("{}", solve_slope(filename, 3, 1)?))
 }
 
-fn solve_slope(filename: &str, right: usize, down: usize) -> io::Result<usize> {
-    let mut x_pos = 0;
-    let mut tree_count = 0;
-    let mut y_pos = 0;
-    for_each_line(filename, |line| Ok({
+struct SledState {
+    x: usize, y: usize, tree_count: usize, right: usize, down: usize
+}
+
+impl SledState {
+    pub fn new(right: usize, down: usize) -> Self {
+        SledState {x: 0, y: 0, tree_count: 0, right, down}
+    }
+
+    pub fn update(&mut self, line: &str) {
         let line = line.as_bytes();
-        if y_pos % down == 0 {
-            if y_pos > 0 && is_tree(line[x_pos % line.len()]) {
-                tree_count += 1;
+        if self.y % self.down == 0 {
+            if self.y > 0 && is_tree(line[self.x % line.len()]) {
+                self.tree_count += 1;
             }
-            x_pos += right;
+            self.x += self.right;
         }
-        y_pos += 1;
+        self.y += 1;
+    }
+}
+
+fn solve_slope(filename: &str, right: usize, down: usize) -> io::Result<usize> {
+    let mut sled = SledState::new(right, down);
+    for_each_line(filename, |line| Ok({
+        sled.update(line);
     }))?;
-    Ok(tree_count)
+    Ok(sled.tree_count)
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
