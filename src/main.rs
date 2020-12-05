@@ -43,17 +43,11 @@ pub fn for_each_line<F: FnMut(&str) -> io::Result<()>>(filename: &str, mut line_
 }
 
 pub fn file2nums(filename: &str) -> io::Result<Vec<isize>> {
-    let mut nums = Vec::new();
-    for_each_line(filename, |line| Ok(nums.push(line.parse::<isize>().unwrap())))?;
-    Ok(nums)
+    Ok(all_lines(filename)?.map(|line| line.unwrap().parse::<isize>().unwrap()).collect())
 }
 
 pub fn pass_counter<F: Fn(&str) -> bool>(filename: &str, passes_check: F) -> io::Result<String> {
-    let mut total = 0;
-    for_each_line(filename, |line| Ok({
-        if passes_check(line) {
-            total += 1;
-        }
-    }))?;
-    Ok(format!("{}", total))
+    Ok(all_lines(filename)?
+        .filter(|line| line.as_ref().map_or(false, |line| passes_check(line.as_str())))
+        .count().to_string())
 }

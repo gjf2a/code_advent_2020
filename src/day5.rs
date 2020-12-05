@@ -3,6 +3,7 @@ use crate::all_lines;
 use std::io::{BufReader, Lines};
 use std::fs::File;
 use std::iter::Map;
+use std::fmt::Display;
 
 fn seat_ids() -> io::Result<Map<Lines<BufReader<File>>, fn(io::Result<String>) -> usize>> {
     Ok(all_lines("day_5_input.txt")?
@@ -24,24 +25,40 @@ pub fn solve_2() -> io::Result<String> {
     panic!("This shouldn't happen; the seat isn't there")
 }
 
-fn decode_str(encoding: &str, lo: char, hi: char) -> usize {
-    let encoding = encoding.as_bytes();
-    let lo = lo as u8;
-    let hi = hi as u8;
-    let mut min = 0;
-    let mut max = (1 << encoding.len()) - 1;
-    for code in encoding.iter() {
-        let mid = (min + max) / 2;
-        if *code == lo {
-            max = mid;
-        } else if *code == hi {
-            min = mid + 1;
+struct BinarySearcher<T:Eq+Copy+Display> {
+    min: usize, max: usize, lo: T, hi: T
+}
+
+impl <T:Eq+Copy+Display> BinarySearcher<T> {
+    pub fn new(min: usize, max: usize, lo: T, hi: T) -> Self {BinarySearcher {min, max, lo, hi}}
+
+    pub fn mid(&self) -> usize {(self.min + self.max) / 2}
+
+    pub fn test(&mut self, test_val: T) {
+        if test_val == self.lo {
+            self.max = self.mid();
+        } else if test_val == self.hi {
+            self.min = self.mid() + 1;
         } else {
-            panic!("Illegal character: {}", *code as char);
+            panic!("Illegal value: {}", test_val);
         }
     }
-    assert_eq!(min, max);
-    min
+
+    pub fn done(&self) -> bool {self.min == self.max}
+
+    pub fn value(&self) -> usize {
+        assert!(self.done());
+        self.min
+    }
+}
+
+fn decode_str(encoding: &str, lo: char, hi: char) -> usize {
+    let encoding = encoding.as_bytes();
+    let mut searcher = BinarySearcher::new(0, (1 << encoding.len()) - 1, lo as u8, hi as u8);
+    for code in encoding.iter() {
+        searcher.test(*code);
+    }
+    searcher.value()
 }
 
 #[derive(Debug,Eq,PartialEq,Clone,Copy)]
