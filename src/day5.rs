@@ -6,8 +6,7 @@ use std::iter::Map;
 
 fn seat_ids() -> io::Result<Map<Lines<BufReader<File>>, fn(io::Result<String>) -> usize>> {
     Ok(all_lines("day_5_input.txt")?
-        .map(|line|
-            BoardingPass::from(line.unwrap().as_str()).unwrap().seat_id()))
+        .map(|line| BoardingPass::from(line.unwrap().as_str()).seat_id()))
 }
 
 pub fn solve_1() -> io::Result<String> {
@@ -25,7 +24,7 @@ pub fn solve_2() -> io::Result<String> {
     panic!("This shouldn't happen; the seat isn't there")
 }
 
-fn decode_str(encoding: &str, lo: char, hi: char) -> Option<usize> {
+fn decode_str(encoding: &str, lo: char, hi: char) -> usize {
     let encoding = encoding.as_bytes();
     let lo = lo as u8;
     let hi = hi as u8;
@@ -38,11 +37,11 @@ fn decode_str(encoding: &str, lo: char, hi: char) -> Option<usize> {
         } else if *code == hi {
             min = mid + 1;
         } else {
-            return None
+            panic!("Illegal character: {}", *code as char);
         }
     }
     assert_eq!(min, max);
-    Some(min)
+    min
 }
 
 #[derive(Debug,Eq,PartialEq,Clone,Copy)]
@@ -52,12 +51,12 @@ pub struct BoardingPass {
 }
 
 impl BoardingPass {
-    pub fn from(encoding: &str) -> Option<Self> {
+    pub fn from(encoding: &str) -> Self {
         if encoding.len() == 10 {
-            Some(BoardingPass {
-                row: decode_str(&encoding[0..7], 'F', 'B').unwrap(),
-                col: decode_str(&encoding[7..], 'L', 'R').unwrap() })
-        } else {None}
+            BoardingPass {
+                row: decode_str(&encoding[0..7], 'F', 'B'),
+                col: decode_str(&encoding[7..], 'L', 'R') }
+        } else {panic!("Illegal encoding length {}: {}", encoding.len(), encoding)}
     }
 
     pub fn seat_id(&self) -> usize {
@@ -75,7 +74,7 @@ mod tests {
 
     #[test]
     fn test_decode() {
-        let pass = BoardingPass::from("FBFBBFFRLR").unwrap();
+        let pass = BoardingPass::from("FBFBBFFRLR");
         assert_eq!(pass.row(), 44);
         assert_eq!(pass.col(), 5);
         assert_eq!(pass.seat_id(), 357);
@@ -83,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_decode_1() {
-        let pass = BoardingPass::from("BFFFBBFRRR").unwrap();
+        let pass = BoardingPass::from("BFFFBBFRRR");
         assert_eq!(pass.row(), 70);
         assert_eq!(pass.col(), 7);
         assert_eq!(pass.seat_id(), 567);
@@ -91,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_decode_2() {
-        let pass = BoardingPass::from("FFFBBBFRRR").unwrap();
+        let pass = BoardingPass::from("FFFBBBFRRR");
         assert_eq!(pass.row(), 14);
         assert_eq!(pass.col(), 7);
         assert_eq!(pass.seat_id(), 119);
@@ -99,7 +98,7 @@ mod tests {
 
     #[test]
     fn test_decode_3() {
-        let pass = BoardingPass::from("BBFFBBFRLL").unwrap();
+        let pass = BoardingPass::from("BBFFBBFRLL");
         assert_eq!(pass.row(), 102);
         assert_eq!(pass.col(), 4);
         assert_eq!(pass.seat_id(), 820);
