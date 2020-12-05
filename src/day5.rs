@@ -15,7 +15,8 @@ pub fn solve_1() -> io::Result<String> {
 }
 
 pub fn solve_2() -> io::Result<String> {
-    let ids: Vec<usize> = seat_ids()?.collect();
+    let mut ids: Vec<usize> = seat_ids()?.collect();
+    ids.sort();
     for i in 1..ids.len() {
         if ids[i-1] + 2 == ids[i] {
             return Ok((ids[i-1] + 1).to_string())
