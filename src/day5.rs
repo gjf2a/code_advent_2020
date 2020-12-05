@@ -54,7 +54,7 @@ impl BoardingPass {
     pub fn from(encoding: &str) -> Self {
         if encoding.len() == 10 {
             BoardingPass {
-                row: decode_str(&encoding[0..7], 'F', 'B'),
+                row: decode_str(&encoding[..7], 'F', 'B'),
                 col: decode_str(&encoding[7..], 'L', 'R') }
         } else {panic!("Illegal encoding length {}: {}", encoding.len(), encoding)}
     }
@@ -72,35 +72,30 @@ impl BoardingPass {
 mod tests {
     use super::*;
 
+    fn test(encoding: &str, row: usize, col: usize, id: usize) {
+        let pass = BoardingPass::from(encoding);
+        assert_eq!(pass.row(), row);
+        assert_eq!(pass.col(), col);
+        assert_eq!(pass.seat_id(), id);
+    }
+
     #[test]
     fn test_decode() {
-        let pass = BoardingPass::from("FBFBBFFRLR");
-        assert_eq!(pass.row(), 44);
-        assert_eq!(pass.col(), 5);
-        assert_eq!(pass.seat_id(), 357);
+        test("FBFBBFFRLR", 44, 5, 357);
     }
 
     #[test]
     fn test_decode_1() {
-        let pass = BoardingPass::from("BFFFBBFRRR");
-        assert_eq!(pass.row(), 70);
-        assert_eq!(pass.col(), 7);
-        assert_eq!(pass.seat_id(), 567);
+        test("BFFFBBFRRR", 70, 7, 567);
     }
 
     #[test]
     fn test_decode_2() {
-        let pass = BoardingPass::from("FFFBBBFRRR");
-        assert_eq!(pass.row(), 14);
-        assert_eq!(pass.col(), 7);
-        assert_eq!(pass.seat_id(), 119);
+        test("FFFBBBFRRR", 14, 7, 119);
     }
 
     #[test]
     fn test_decode_3() {
-        let pass = BoardingPass::from("BBFFBBFRLL");
-        assert_eq!(pass.row(), 102);
-        assert_eq!(pass.col(), 4);
-        assert_eq!(pass.seat_id(), 820);
+        test("BBFFBBFRLL", 102, 4, 820);
     }
 }
