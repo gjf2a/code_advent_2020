@@ -84,11 +84,9 @@ impl Passports {
             self.passports.push(BTreeMap::new());
         } else {
             for pair in line.split_whitespace() {
-                let mut parts = pair.split(':');
-                let key = parts.next().unwrap();
-                let value = parts.next().unwrap();
+                let parts: Vec<&str> = pair.split(':').collect();
                 let end = self.passports.len() - 1;
-                self.passports[end].insert(key.to_owned(), value.to_owned());
+                self.passports[end].insert(parts[0].to_owned(), parts[1].to_owned());
             }
         }
     }

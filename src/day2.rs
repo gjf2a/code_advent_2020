@@ -31,11 +31,9 @@ fn line_valid_password_2(line: &str) -> bool {
 }
 
 fn parse_password_line(line: &str) -> (usize,usize,char,&str) {
-    let mut parts = line.split_whitespace();
-    let mut range = parts.next().unwrap().split('-');
-    let lo = range.next().unwrap().parse::<usize>().unwrap();
-    let hi = range.next().unwrap().parse::<usize>().unwrap();
-    (lo, hi, parts.next().unwrap().chars().next().unwrap(), parts.next().unwrap())
+    let spaced: Vec<&str> = line.split_whitespace().collect();
+    let ranged: Vec<usize> = spaced[0].split('-').map(|v| v.parse::<usize>().unwrap()).collect();
+    (ranged[0], ranged[1], spaced[1].chars().next().unwrap(), spaced[2])
 }
 
 #[cfg(test)]
