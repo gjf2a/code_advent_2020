@@ -1,5 +1,5 @@
 use std::io;
-use crate::{MultiLineObjects, ExNihilo};
+use advent_code_lib::{MultiLineObjects, ExNihilo};
 use bits::BitArray;
 use std::collections::BTreeSet;
 

@@ -1,5 +1,5 @@
 use std::io;
-use crate::pass_counter;
+use advent_code_lib::pass_counter;
 
 pub fn solve_1() -> io::Result<String> {
     pass_counter("day_2_input.txt", line_valid_password_1)

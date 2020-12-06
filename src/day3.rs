@@ -1,5 +1,5 @@
 use std::io;
-use crate::for_each_line;
+use advent_code_lib::for_each_line;
 
 fn is_tree(c: u8) -> bool {
     c == '#' as u8

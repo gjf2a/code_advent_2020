@@ -1,5 +1,5 @@
 use std::io;
-use crate::all_lines;
+use advent_code_lib::all_lines;
 use std::io::{BufReader, Lines};
 use std::fs::File;
 use std::iter::Map;

@@ -1,5 +1,5 @@
 use std::io;
-use crate::MultiLineObjects;
+use advent_code_lib::MultiLineObjects;
 use std::collections::BTreeMap;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {

@@ -1,5 +1,5 @@
 use std::io;
-use crate::file2nums;
+use advent_code_lib::file2nums;
 
 pub fn solve_1() -> io::Result<String> {
     let nums = file2nums("day_1_input.txt")?;
