@@ -30,6 +30,10 @@ struct Puzzle2Group {
     selected_chars: BitArray
 }
 
+fn i2letter(i: u8) -> char {
+    (i + 'a' as u8) as char
+}
+
 impl Puzzle2Group {
     pub fn new() -> Self {
         let mut bits = BitArray::new();
@@ -41,14 +45,23 @@ impl Puzzle2Group {
 
     pub fn apply_line(&mut self, line: &str) {
         for i in 0..26 {
-            let c = (i + 'a' as u8) as char;
-            if !line.contains(c) {
+            if !line.contains(i2letter(i)) {
                 self.selected_chars.set(i as u64, false);
             }
         }
     }
 
     pub fn num_selected(&self) -> u32 {self.selected_chars.count_bits_on()}
+
+    pub fn chars_selected(&self) -> String {
+        let mut result = String::new();
+        for i in 0..26 {
+            if self.selected_chars.is_set(i) {
+                result.push(i2letter(i as u8));
+            }
+        }
+        result
+    }
 }
 
 #[cfg(test)]
@@ -65,10 +78,13 @@ mod tests {
         let mut p2 = Puzzle2Group::new();
         p2.apply_line("abc");
         assert_eq!(p2.num_selected(), 3);
+        assert_eq!(p2.chars_selected(), "abc");
         p2.apply_line("bcd");
         assert_eq!(p2.num_selected(), 2);
+        assert_eq!(p2.chars_selected(), "bc");
         p2.apply_line("cde");
         assert_eq!(p2.num_selected(), 1);
+        assert_eq!(p2.chars_selected(), "c");
         p2.apply_line("def");
         assert_eq!(p2.num_selected(), 0);
     }
