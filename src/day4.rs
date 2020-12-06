@@ -1,5 +1,5 @@
 use std::io;
-use crate::for_each_line;
+use crate::MultiLineObjects;
 use std::collections::BTreeMap;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
@@ -71,38 +71,16 @@ fn in_range(value: &str, min: usize, max: usize) -> bool {
     }
 }
 
-struct Passports {
-    passports: Vec<BTreeMap<String,String>>
-}
-
-impl Passports {
-    pub fn new() -> Self {Passports {passports: vec![BTreeMap::new()]}}
-
-    pub fn add_line(&mut self, line: &str) {
-        let line = line.trim();
-        if line.len() == 0 {
-            self.passports.push(BTreeMap::new());
-        } else {
-            for pair in line.split_whitespace() {
-                let parts: Vec<&str> = pair.split(':').collect();
-                let end = self.passports.len() - 1;
-                self.passports[end].insert(parts[0].to_owned(), parts[1].to_owned());
-            }
-        }
-    }
-
-    pub fn count_matching<P: Fn(&BTreeMap<String,String>) -> bool>(&self, predicate: P) -> usize {
-        self.passports.iter()
-            .filter(|m| predicate(*m))
-            .count()
-    }
-}
-
-fn fields_and_values_from(filename: &str) -> io::Result<Passports> {
-    let mut passports = Passports::new();
-    for_each_line(filename, |line| Ok({
-        passports.add_line(line);
-    }))?;
+fn fields_and_values_from(filename: &str) -> io::Result<MultiLineObjects<BTreeMap<String,String>>> {
+    let passports = MultiLineObjects::from_file
+        (Box::new(BTreeMap::new),
+         filename,
+         &mut |map, line| {
+             for pair in line.split_whitespace() {
+                 let parts: Vec<&str> = pair.split(':').collect();
+                 map.insert(parts[0].to_owned(), parts[1].to_owned());
+             }
+         })?;
     Ok(passports)
 }
 
@@ -131,7 +109,7 @@ mod tests {
             "iyr"=>"2011", "ecl"=>"brn", "hgt"=>"59in")
         ]);
 
-        assert_eq!(fields_and_values_from("day_4_example.txt").unwrap().passports, example_target);
+        assert_eq!(fields_and_values_from("day_4_example.txt").unwrap().objects(), example_target);
     }
 
     #[test]
