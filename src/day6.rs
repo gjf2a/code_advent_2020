@@ -43,14 +43,10 @@ impl ExNihilo for Puzzle2Group {
 
 impl Puzzle2Group {
     pub fn apply_line(&mut self, line: &str) {
-        let absent: Vec<char> = self.selected_chars.iter()
-            .filter(|c| !line.contains(**c))
+        self.selected_chars = self.selected_chars.iter()
             .map(|c| *c)
+            .filter(|c| line.contains(*c))
             .collect();
-
-        for c in absent {
-            self.selected_chars.remove(&c);
-        }
     }
 
     pub fn num_selected(&self) -> usize {self.selected_chars.len()}
