@@ -1,13 +1,12 @@
-use std::collections::btree_set::BTreeSet;
 use std::io;
-use crate::MultiLineObjects;
+use crate::{MultiLineObjects, ExNihilo};
 use bits::BitArray;
+use std::collections::BTreeSet;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let answers = MultiLineObjects::from_file
-        (Box::new(BTreeSet::new),
-         filename,
-        &mut |set, line| {
+        (filename,
+        &mut |set: &mut BTreeSet<char>, line| {
             for c in line.chars() {
                 set.insert(c);
             }
@@ -17,9 +16,8 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
     let answers = MultiLineObjects::from_file
-        (Box::new(Puzzle2Group::new),
-        filename,
-        &mut |p2g, line| {
+        (filename,
+        &mut |p2g: &mut Puzzle2Group, line| {
             p2g.apply_line(line);
         })?;
     Ok(answers.iter().map(|p2g| p2g.num_selected()).sum::<u32>().to_string())
@@ -34,15 +32,17 @@ fn i2letter(i: u8) -> char {
     (i + 'a' as u8) as char
 }
 
-impl Puzzle2Group {
-    pub fn new() -> Self {
+impl ExNihilo for Puzzle2Group {
+    fn create() -> Self {
         let mut bits = BitArray::new();
         for _ in 0..26 {
             bits.add(true);
         }
         Puzzle2Group {selected_chars: bits}
     }
+}
 
+impl Puzzle2Group {
     pub fn apply_line(&mut self, line: &str) {
         for i in 0..26 {
             if !line.contains(i2letter(i)) {
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_p2_group() {
-        let mut p2 = Puzzle2Group::new();
+        let mut p2 = Puzzle2Group::create();
         p2.apply_line("abc");
         assert_eq!(p2.num_selected(), 3);
         assert_eq!(p2.chars_selected(), "abc");

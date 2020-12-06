@@ -11,6 +11,7 @@ use std::{env,fs,io};
 use std::io::{BufRead, Lines, BufReader};
 use std::fs::File;
 use std::slice::Iter;
+use std::collections::{BTreeMap, BTreeSet};
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -56,18 +57,29 @@ pub fn pass_counter<F: Fn(&str) -> bool>(filename: &str, passes_check: F) -> io:
         .count().to_string())
 }
 
-pub struct MultiLineObjects<T: Eq+PartialEq+Clone> {
-    objects: Vec<T>,
-    maker: Box<dyn Fn()->T>
+pub trait ExNihilo {
+    fn create() -> Self;
 }
 
-impl <T: Eq+PartialEq+Clone> MultiLineObjects<T> {
-    pub fn new(starter: Box<dyn Fn()->T>) -> Self {
-        MultiLineObjects {objects: vec![starter()], maker: starter}
+impl <K:Ord,V> ExNihilo for BTreeMap<K,V> {
+    fn create() -> Self {BTreeMap::new()}
+}
+
+impl <T:Ord> ExNihilo for BTreeSet<T> {
+    fn create() -> Self {BTreeSet::new()}
+}
+
+pub struct MultiLineObjects<T: Eq+PartialEq+Clone+ExNihilo> {
+    objects: Vec<T>
+}
+
+impl <T: Eq+PartialEq+Clone+ExNihilo> MultiLineObjects<T> {
+    pub fn new() -> Self {
+        MultiLineObjects {objects: vec![T::create()]}
     }
 
-    pub fn from_file<P: FnMut(&mut T,&str)>(starter: Box<dyn Fn()->T>, filename: &str, proc: &mut P) -> io::Result<Self> {
-        let mut result = MultiLineObjects::new(starter);
+    pub fn from_file<P: FnMut(&mut T,&str)>(filename: &str, proc: &mut P) -> io::Result<Self> {
+        let mut result = MultiLineObjects::new();
         for_each_line(filename, |line| Ok({
             result.add_line(line, proc);
         }))?;
@@ -77,7 +89,7 @@ impl <T: Eq+PartialEq+Clone> MultiLineObjects<T> {
     pub fn add_line<P: FnMut(&mut T,&str)>(&mut self, line: &str, proc: &mut P) {
         let line = line.trim();
         if line.len() == 0 {
-            self.objects.push((*self.maker)());
+            self.objects.push(T::create());
         } else {
             let end = self.objects.len() - 1;
             proc(&mut self.objects[end], line);
