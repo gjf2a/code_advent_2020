@@ -91,7 +91,7 @@ impl <T: Eq+PartialEq+Clone> MultiLineObjects<T> {
     }
 
     pub fn count_matching<P: Fn(&T) -> bool>(&self, predicate: P) -> usize {
-        self.objects.iter()
+        self.iter()
             .filter(|m| predicate(*m))
             .count()
     }
