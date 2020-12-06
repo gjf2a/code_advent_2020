@@ -1,6 +1,5 @@
 use std::io;
 use advent_code_lib::{MultiLineObjects, ExNihilo};
-use bits::BitArray;
 use std::collections::BTreeSet;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
@@ -20,12 +19,12 @@ pub fn solve_2(filename: &str) -> io::Result<String> {
         &mut |p2g: &mut Puzzle2Group, line| {
             p2g.apply_line(line);
         })?;
-    Ok(answers.iter().map(|p2g| p2g.num_selected()).sum::<u32>().to_string())
+    Ok(answers.iter().map(|p2g| p2g.num_selected()).sum::<usize>().to_string())
 }
 
 #[derive(Clone,Eq,PartialEq)]
 struct Puzzle2Group {
-    selected_chars: BitArray
+    selected_chars: BTreeSet<char>
 }
 
 fn i2letter(i: u8) -> char {
@@ -34,33 +33,31 @@ fn i2letter(i: u8) -> char {
 
 impl ExNihilo for Puzzle2Group {
     fn create() -> Self {
-        let mut bits = BitArray::new();
-        for _ in 0..26 {
-            bits.add(true);
+        let mut chars = BTreeSet::new();
+        for i in 0..26 {
+            chars.insert(i2letter(i));
         }
-        Puzzle2Group {selected_chars: bits}
+        Puzzle2Group {selected_chars: chars}
     }
 }
 
 impl Puzzle2Group {
     pub fn apply_line(&mut self, line: &str) {
-        for i in 0..26 {
-            if !line.contains(i2letter(i)) {
-                self.selected_chars.set(i as u64, false);
+        let mut absent = Vec::new();
+        for c in self.selected_chars.iter() {
+            if !line.contains(*c) {
+                absent.push(*c);
             }
+        }
+        for c in absent {
+            self.selected_chars.remove(&c);
         }
     }
 
-    pub fn num_selected(&self) -> u32 {self.selected_chars.count_bits_on()}
+    pub fn num_selected(&self) -> usize {self.selected_chars.len()}
 
     pub fn chars_selected(&self) -> String {
-        let mut result = String::new();
-        for i in 0..26 {
-            if self.selected_chars.is_set(i) {
-                result.push(i2letter(i as u8));
-            }
-        }
-        result
+        self.selected_chars.iter().collect()
     }
 }
 
