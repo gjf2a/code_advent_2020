@@ -33,11 +33,7 @@ fn i2letter(i: u8) -> char {
 
 impl ExNihilo for Puzzle2Group {
     fn create() -> Self {
-        let mut chars = BTreeSet::new();
-        for i in 0..26 {
-            chars.insert(i2letter(i));
-        }
-        Puzzle2Group {selected_chars: chars}
+        Puzzle2Group {selected_chars: (0..26).map(|i| i2letter(i)).collect()}
     }
 }
 
