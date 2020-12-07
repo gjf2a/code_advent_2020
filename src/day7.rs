@@ -21,9 +21,7 @@ fn create_graph_from(filename: &str) -> io::Result<StringGraph> {
     for_each_line(filename, |line| Ok({
         let left_right: Vec<&str> = line.split("contain ").collect();
         let key = get_bag_color(left_right[0]);
-        if left_right[1].contains("no other bags") {
-            graph.add_if_absent(key.as_str());
-        } else {
+        if !left_right[1].contains("no other bags") {
             left_right[1].split(", ")
                 .map(|s| bag_color_and_count(s))
                 .for_each(|(count, color)| {
