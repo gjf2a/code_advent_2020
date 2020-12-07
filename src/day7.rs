@@ -3,8 +3,17 @@ use std::io;
 use std::collections::{BTreeSet, BTreeMap};
 use std::collections::btree_map::Keys;
 
-pub fn solve_1(filename: &str) {
+pub fn solve_1(filename: &str) -> io::Result<String> {
+    let graph = create_graph_from(filename)?;
+    let total = graph.all_node_names()
+        .filter(|name| graph.all_successors_of(name).contains("shiny gold"))
+        .count();
+    Ok(total.to_string())
+}
 
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    let graph = create_graph_from(filename)?;
+    Ok(graph.bags_within("shiny gold").to_string())
 }
 
 fn create_graph_from(filename: &str) -> io::Result<StringGraph> {
@@ -82,6 +91,14 @@ impl StringGraph {
         }
         visited
     }
+
+    pub fn bags_within(&self, name: &str) -> usize {
+        self.node2nodes.get(name)
+            .map_or(0,
+                    |m| m.iter()
+                        .map(|(key,value)| value * (1 + self.bags_within(key)))
+                        .sum())
+    }
 }
 
 #[cfg(test)]
@@ -146,4 +163,28 @@ mod tests {
         });
     }
 
+    #[test]
+    pub fn test_solve_1() {
+        assert_eq!(solve_1("day_7_example.txt").unwrap(), "4");
+    }
+
+    #[test]
+    pub fn test_bag_sum() {
+        let graph = create_graph_from("day_7_example.txt").unwrap();
+        [("faded blue", 0), ("dotted black", 0), ("vibrant plum", 11), ("dark olive", 7),
+            ("shiny gold", 32), ("muted yellow", 75)].iter()
+            .for_each(|(color, count)| {
+                assert_eq!(graph.bags_within(color), *count as usize)
+            });
+    }
+
+    #[test]
+    pub fn test_solve_2_1() {
+        assert_eq!(solve_2("day_7_example.txt").unwrap(), "32");
+    }
+
+    #[test]
+    pub fn test_solve_2_2() {
+        assert_eq!(solve_2("day_7_example_2.txt").unwrap(), "126");
+    }
 }

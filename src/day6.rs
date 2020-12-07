@@ -23,7 +23,7 @@ pub fn solve_2(filename: &str) -> io::Result<String> {
 }
 
 #[derive(Clone,Eq,PartialEq)]
-struct Puzzle2Group {
+pub struct Puzzle2Group {
     selected_chars: BTreeSet<char>
 }
 
