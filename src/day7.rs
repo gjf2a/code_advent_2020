@@ -20,10 +20,10 @@ fn create_graph_from(filename: &str) -> io::Result<StringGraph> {
     let mut graph = StringGraph::new();
     for_each_line(filename, |line| Ok({
         let left_right: Vec<&str> = line.split("contain ").collect();
-        let key = get_bag_color(left_right[0]);
+        let key = bag_color(left_right[0]);
         if !left_right[1].contains("no other bags") {
             left_right[1].split(", ")
-                .map(|s| bag_color_and_count(s))
+                .map(|s| bag_count_and_color(s))
                 .for_each(|(count, color)| {
                     graph.add_edge(key.as_str(), color.as_str(), count);
                 });
@@ -32,14 +32,13 @@ fn create_graph_from(filename: &str) -> io::Result<StringGraph> {
     Ok(graph)
 }
 
-fn get_bag_color(bag_src: &str) -> String {
-    let bag_parts: Vec<&str> = bag_src.split(" bag").collect();
-    bag_parts[0].to_string()
+fn bag_color(bag_src: &str) -> String {
+    bag_src.split(" bag").next().unwrap().to_string()
 }
 
-fn bag_color_and_count(bag_src: &str) -> (usize, String) {
+fn bag_count_and_color(bag_src: &str) -> (usize, String) {
     let bag_parts: Vec<&str> = bag_src.splitn(2, ' ').collect();
-    (bag_parts[0].parse::<usize>().unwrap(), get_bag_color(bag_parts[1]))
+    (bag_parts[0].parse::<usize>().unwrap(), bag_color(bag_parts[1]))
 }
 
 #[derive(Clone,Debug,Eq,Ord,PartialOrd,PartialEq)]
@@ -121,7 +120,7 @@ mod tests {
         [("light red bags", "light red"), ("bright white bag", "bright white"),
             ("muted yellow bags", "muted yellow")].iter()
             .for_each(|(b, c)| {
-            assert_eq!(get_bag_color(b).as_str(), *c);
+            assert_eq!(bag_color(b).as_str(), *c);
         });
     }
 
@@ -135,7 +134,7 @@ mod tests {
             ("2 shiny gold bags", 2, "shiny gold"),
             ("9 faded blue bags", 9, "faded blue")].iter()
             .for_each(|(src, count, color)| {
-                let (ct, cl) = bag_color_and_count(src);
+                let (ct, cl) = bag_count_and_color(src);
                 assert_eq!(cl.as_str(), *color);
                 assert_eq!(ct, *count as usize);
             });
