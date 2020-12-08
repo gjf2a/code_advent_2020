@@ -4,10 +4,10 @@ use advent_code_lib::all_lines;
 use std::collections::BTreeSet;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    Ok(terminates(CPU::from_file(filename)).1.to_string())
+    Ok(terminates(BootCode::from_file(filename)).1.to_string())
 }
 
-pub fn terminates(mut program: CPU) -> (bool,isize) {
+pub fn terminates(mut program: BootCode) -> (bool, isize) {
     let mut visited = BTreeSet::new();
     while !program.terminated() && !visited.contains(&program.pc()) {
         visited.insert(program.pc());
@@ -17,7 +17,7 @@ pub fn terminates(mut program: CPU) -> (bool,isize) {
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    let original_program = CPU::from_file(filename);
+    let original_program = BootCode::from_file(filename);
     for i in 0..original_program.len() {
         let mut fixed_copy = original_program.clone();
         fixed_copy.fix_instr(i);
@@ -56,15 +56,15 @@ impl Instruction {
 }
 
 #[derive(Clone,Debug)]
-pub struct CPU {
+pub struct BootCode {
     program: Vec<Instruction>,
     pc: usize,
     accumulator: isize
 }
 
-impl CPU {
+impl BootCode {
     pub fn from_file(filename: &str) -> Self {
-        CPU {program: all_lines(filename).unwrap()
+        BootCode {program: all_lines(filename).unwrap()
             .map(|line| Instruction::from(line.unwrap().as_str()))
             .collect(),
             pc: 0,
