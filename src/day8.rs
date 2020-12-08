@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let mut program = CPU::from_file(filename);
     let mut visited = BTreeSet::new();
-    while !visited.contains(&program.pc) {
-        visited.insert(program.pc);
+    while !visited.contains(&program.pc()) {
+        visited.insert(program.pc());
         program.advance();
     }
     Ok(program.acc().to_string())
