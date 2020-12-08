@@ -4,15 +4,32 @@ use advent_code_lib::all_lines;
 use std::collections::BTreeSet;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    let mut program = CPU::from_file(filename);
+    Ok(terminates(CPU::from_file(filename)).1.to_string())
+}
+
+pub fn terminates(mut program: CPU) -> (bool,isize) {
     let mut visited = BTreeSet::new();
-    while !visited.contains(&program.pc()) {
+    while !program.terminated() && !visited.contains(&program.pc()) {
         visited.insert(program.pc());
         program.advance();
     }
-    Ok(program.acc().to_string())
+    (program.terminated(), program.acc())
 }
 
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    let original_program = CPU::from_file(filename);
+    for i in 0..original_program.len() {
+        let mut fixed_copy = original_program.clone();
+        fixed_copy.fix_instr(i);
+        let (is_fixed, acc_value) = terminates(fixed_copy);
+        if is_fixed {
+            return Ok(acc_value.to_string());
+        }
+    }
+    Ok("program cannot be fixed".to_owned())
+}
+
+#[derive(Debug,Copy,Clone,Eq,PartialEq)]
 pub enum Instruction {
     Nop(isize), Acc(isize), Jmp(isize)
 }
@@ -28,8 +45,17 @@ impl Instruction {
             _ => panic!("Did not recognize `{}`", parts[0])
         }
     }
+
+    pub fn swap_jmp_nop(&self) -> Self {
+        match &self {
+            Nop(arg) => Jmp(*arg),
+            Jmp(arg) => Nop(*arg),
+            Acc(_) => *self
+        }
+    }
 }
 
+#[derive(Clone,Debug)]
 pub struct CPU {
     program: Vec<Instruction>,
     pc: usize,
@@ -54,8 +80,18 @@ impl CPU {
         self.pc += 1;
     }
 
+    pub fn terminated(&self) -> bool {
+        self.pc == self.program.len()
+    }
+
+    pub fn fix_instr(&mut self, i: usize) {
+        self.program[i] = self.program[i].swap_jmp_nop();
+    }
+
     pub fn pc(&self) -> usize {self.pc}
     pub fn acc(&self) -> isize {self.accumulator}
+    pub fn len(&self) -> usize {self.program.len()}
+    pub fn instr_at(&self, i: usize) -> Instruction {self.program[i]}
 }
 
 #[cfg(test)]
@@ -67,4 +103,8 @@ mod tests {
         assert_eq!(solve_1("day_8_example.txt").unwrap(), "5");
     }
 
+    #[test]
+    pub fn test_solve_2() {
+        assert_eq!(solve_2("day_8_example.txt").unwrap(), "8");
+    }
 }
