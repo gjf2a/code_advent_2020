@@ -73,15 +73,14 @@ impl CPU {
 
     pub fn advance(&mut self) {
         match self.program[self.pc] {
-            Nop(_) => {},
-            Acc(arg) => {self.accumulator += arg},
-            Jmp(arg) => {self.pc = (self.pc as isize + arg - 1) as usize;}
+            Nop(_) => {self.pc += 1;},
+            Acc(arg) => {self.accumulator += arg; self.pc += 1;},
+            Jmp(arg) => {self.pc = (self.pc as isize + arg) as usize;}
         }
-        self.pc += 1;
     }
 
     pub fn terminated(&self) -> bool {
-        self.pc == self.program.len()
+        self.pc >= self.program.len()
     }
 
     pub fn fix_instr(&mut self, i: usize) {
