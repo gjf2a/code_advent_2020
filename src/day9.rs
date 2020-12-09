@@ -3,22 +3,23 @@ use std::io;
 use std::collections::VecDeque;
 
 pub fn solve_1() -> io::Result<String> {
-    Ok(find_failing_xmas_num("day_9_input.txt", 25)?.unwrap().to_string())
+    Ok(find_failing_xmas_num(&file2nums("day_9_input.txt")?, 25).unwrap().to_string())
 }
 
-fn find_failing_xmas_num(filename: &str, preamble_length: usize) -> io::Result<Option<isize>> {
-    let nums = file2nums(filename)?;
+
+
+fn find_failing_xmas_num(nums: &Vec<isize>, preamble_length: usize) -> Option<isize> {
     let mut prev_preamble = VecDeque::new();
     for num in nums.iter() {
         if prev_preamble.len() == preamble_length {
             match find_pair_sum(&prev_preamble, *num) {
-                None => {return Ok(Some(*num));},
+                None => {return Some(*num);},
                 Some((_,_)) => {prev_preamble.pop_front();}
             }
         }
         prev_preamble.push_back(*num);
     }
-    Ok(None)
+    None
 }
 
 fn find_pair_sum(prev: &VecDeque<isize>, target: isize) -> Option<(isize,isize)> {
@@ -38,6 +39,6 @@ mod tests {
 
     #[test]
     fn test_example_1() {
-        assert_eq!(find_failing_xmas_num("day_9_example.txt", 5).unwrap().unwrap(), 127);
+        assert_eq!(find_failing_xmas_num(&file2nums("day_9_example.txt").unwrap(), 5).unwrap(), 127);
     }
 }
