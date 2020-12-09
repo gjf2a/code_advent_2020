@@ -8,6 +8,7 @@ pub mod day5;
 pub mod day6;
 pub mod day7;
 pub mod day8;
+pub mod day9;
 
 use std::{env,io};
 
@@ -32,6 +33,7 @@ fn main() -> io::Result<()> {
             "7_2" => day7::solve_2("day_7_input.txt")?,
             "8_1" => day8::solve_1("day_8_input.txt")?,
             "8_2" => day8::solve_2("day_8_input.txt")?,
+            "9_1" => day9::solve_1()?,
             _ => "Unrecognized problem".to_string()
         }
     });
