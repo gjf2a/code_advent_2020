@@ -47,7 +47,7 @@ fn count_arrangements(filename: &str) -> io::Result<usize> {
     let mut results = vec![1_usize];
     for i in 1..nums.len() - 1 {
         let last = find_last_stable(&nums, i);
-        results.push(results[last] * count_in_window(&nums, last+1, i));
+        results.push(results[last] * num_valid_in_window(&nums, last+1, i));
     }
     Ok(*results.last().unwrap())
 }
@@ -60,7 +60,7 @@ fn find_last_stable(nums: &[usize], index_to_remove: usize) -> usize {
     j
 }
 
-fn count_in_window(nums: &[usize], start: usize, end: usize) -> usize {
+fn num_valid_in_window(nums: &[usize], start: usize, end: usize) -> usize {
     let mut count = 0;
     for window in all_windows(end - start + 1) {
         if valid_window(nums, &window, start) {
@@ -147,20 +147,20 @@ mod tests {
             assert!(valid_window(&nums, &keepers[i], 1));
         }
 
-        assert_eq!(count_in_window(&nums, 1, 3), 7);
+        assert_eq!(num_valid_in_window(&nums, 1, 3), 7);
     }
 
     #[test]
     fn test_count_in_window_2() {
         let nums = vec![0, 1, 2, 3, 6];
-        assert_eq!(count_in_window(&nums, 1, 2), 4);
-        assert_eq!(count_in_window(&nums, 2, 3), 2);
+        assert_eq!(num_valid_in_window(&nums, 1, 2), 4);
+        assert_eq!(num_valid_in_window(&nums, 2, 3), 2);
     }
 
     #[test]
     fn test_count_in_window_3() {
         let nums = vec![0, 1, 2, 3, 4, 5, 8];
-        assert_eq!(count_in_window(&nums, 1, 2), 4);
+        assert_eq!(num_valid_in_window(&nums, 1, 2), 4);
 
     }
 
