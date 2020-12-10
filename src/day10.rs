@@ -164,7 +164,7 @@ mod tests {
         // Delete 2: 1, 3, 4, 5; 3, 4, 5 (total: 2)
         // Delete 1: 2, 3, 4, 5 (total: 1)
         //
-        // Turns out I undercounted by 3.
+        // Turns out I undercounted by 3, as there are 14 rather than 11.
         assert_eq!(count_arrangements("day_10_self_example_3.txt").unwrap(), 14);
     }
 }
