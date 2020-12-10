@@ -28,16 +28,25 @@ fn count_jolt_jumps(filename: &str) -> io::Result<(usize, usize)> {
     Ok((count1, count3))
 }
 
-fn deletable(nums: &Vec<usize>, i: usize) -> bool {
-    i > 0 && i < nums.len() - 1 && nums[i+1] - nums[i-1] <= 3
+fn deletable(nums: &Vec<usize>, start: usize, end: usize) -> bool {
+    start <= end && start > 0 && end < nums.len() - 1 && nums[end + 1] - nums[start - 1] <= 3
 }
 
 fn count_arrangements(filename: &str) -> io::Result<usize> {
     let nums = make_joltage_vec(filename)?;
     let mut permutations = 1;
     for i in 1..nums.len() - 1 {
-        if deletable(&nums, i) {
+        if deletable(&nums, i, i) {
             permutations *= 2;
+            let mut j = i - 1;
+            while deletable(&nums, j, j) {
+                j -= 1;
+            }
+            j += 1;
+            while j < i && !deletable(&nums, j, i) {
+                permutations -= 1;
+                j += 1;
+            }
         }
     }
     Ok(permutations)
