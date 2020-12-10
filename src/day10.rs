@@ -28,7 +28,7 @@ fn count_jolt_jumps(filename: &str) -> io::Result<(usize, usize)> {
     Ok((count1, count3))
 }
 
-fn deletable(nums: &Vec<usize>, start: usize, end: usize) -> bool {
+fn deletable(nums: &[usize], start: usize, end: usize) -> bool {
     start <= end && start > 0 && end < nums.len() - 1 && nums[end + 1] - nums[start - 1] <= 3
 }
 
@@ -43,13 +43,31 @@ fn count_arrangements(filename: &str) -> io::Result<usize> {
                 j -= 1;
             }
             j += 1;
+            let mut subtractions = 0;
             while j < i && !deletable(&nums, j, i) {
-                permutations -= 1;
+                subtractions *= 2;
+                subtractions += 1;
                 j += 1;
             }
+            permutations -= subtractions;
         }
     }
     Ok(permutations)
+}
+
+fn count_arrangements1(filename: &str) -> io::Result<usize> {
+    let nums = make_joltage_vec(filename)?;
+    Ok(count_arrangements_help(&nums))
+}
+
+fn count_arrangements_help(nums: &[usize]) -> usize {
+    if nums.len() == 0 {
+        1
+    } else if deletable(&nums, 1, 1) {
+        2 * count_arrangements_help(&nums[1..])
+    } else {
+        count_arrangements_help(&nums[1..])
+    }
 }
 
 #[cfg(test)]
@@ -74,5 +92,41 @@ mod tests {
     #[test]
     fn test_ex_2_2() {
         assert_eq!(count_arrangements("day_10_example_2.txt").unwrap(), 19208);
+    }
+
+    #[test]
+    fn test_self_1() {
+        assert_eq!(count_arrangements("day_10_self_example_1.txt").unwrap(), 4);
+    }
+
+    #[test]
+    fn test_self_2() {
+        // Possibilities:
+        // 1, 2, 3, 4
+        // 1, 2, 4
+        // 1, 4
+        // 1, 3, 4
+        // 2, 4
+        // 3, 4
+        // 2, 3, 4
+        assert_eq!(count_arrangements("day_10_self_example_2.txt").unwrap(), 7)
+    }
+
+    #[test]
+    fn test_self_3() {
+        // Possibilities:
+        // 1, 2, 3, 4, 5
+        // Delete 5: No
+        // Delete 4: 1, 2, 3, 5; 1, 2, 5; 2, 5; 1, 3, 5; 3, 5 (total: 4)
+        // Delete 3: 1, 2, 4, 5; 1, 4, 5; 2, 4, 5 (total: 3)
+        // Delete 2: 1, 3, 4, 5; 3, 4, 5 (total: 2)
+        // Delete 1: 2, 3, 4, 5 (total: 1)
+
+        // Algorithm:
+        // 1: Deletable; p: 2
+        // 2: Deletable; p: 4
+        // 3: Deletable; p: 8
+        // 4: Deletable; p: 16 - 1 = 15
+        assert_eq!(count_arrangements("day_10_self_example_3.txt").unwrap(), 11);
     }
 }
