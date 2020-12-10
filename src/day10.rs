@@ -66,11 +66,8 @@ fn count_in_window(nums: &[usize], start: usize, end: usize) -> usize {
 }
 
 fn valid_window(nums: &[usize], keep_window: &[bool], window_start: usize) -> bool {
-    if keep_window.iter().all(|b| *b) {return true;}
     if window_start == 0 || window_start + keep_window.len() >= nums.len() {return false;}
-    let mut kept = kept_window(nums, keep_window, window_start);
-    kept.insert(0, nums[window_start - 1]);
-    kept.push(nums[window_start + keep_window.len()]);
+    let kept = kept_window(nums, keep_window, window_start);
     (1..kept.len()).all(|i| jolt_jump_ok(&kept, i-1, i))
 }
 
