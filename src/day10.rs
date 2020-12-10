@@ -1,11 +1,23 @@
-use advent_code_lib::file2nums;
+use advent_code_lib::all_lines;
 use std::io;
 
-fn count_jolt_jumps(filename: &str) -> io::Result<(usize, usize)> {
-    let mut nums = file2nums(filename)?;
+pub fn solve_1(filename: &str) -> io::Result<String> {
+    let (count1, count3) = count_jolt_jumps(filename)?;
+    Ok((count1 * count3).to_string())
+}
+
+fn make_joltage_vec(filename: &str) -> io::Result<Vec<usize>> {
+    let mut nums = vec![0];
+    all_lines(filename)?
+        .map(|line| line.unwrap().parse::<usize>().unwrap())
+        .for_each(|joltage| nums.push(joltage));
     nums.sort();
-    nums.insert(0, 0);
     nums.push(nums.last().unwrap() + 3);
+    Ok(nums)
+}
+
+fn count_jolt_jumps(filename: &str) -> io::Result<(usize, usize)> {
+    let nums = make_joltage_vec(filename)?;
     let mut count1 = 0;
     let mut count3 = 0;
     for i in 0..nums.len() - 1 {
@@ -14,6 +26,17 @@ fn count_jolt_jumps(filename: &str) -> io::Result<(usize, usize)> {
         if diff == 3 {count3 += 1;}
     }
     Ok((count1, count3))
+}
+
+fn count_arrangements(filename: &str) -> io::Result<usize> {
+    let nums = make_joltage_vec(filename)?;
+    let mut deletable_count = 0;
+    for i in 1..nums.len() - 1 {
+        if nums[i+1] - nums[i-1] <= 3 {
+            deletable_count += 1;
+        }
+    }
+    Ok(2_usize.pow(deletable_count))
 }
 
 #[cfg(test)]
@@ -28,5 +51,15 @@ mod tests {
     #[test]
     fn text_ex_2_1() {
         assert_eq!(count_jolt_jumps("day_10_example_2.txt").unwrap(), (22, 10));
+    }
+
+    #[test]
+    fn test_ex_1_2() {
+        assert_eq!(count_arrangements("day_10_example_1.txt").unwrap(), 8);
+    }
+
+    #[test]
+    fn test_ex_2_2() {
+        assert_eq!(count_arrangements("day_10_example_2.txt").unwrap(), 19208);
     }
 }
