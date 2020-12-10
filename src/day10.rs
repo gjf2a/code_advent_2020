@@ -46,13 +46,18 @@ fn count_arrangements(filename: &str) -> io::Result<usize> {
     let nums = make_joltage_vec(filename)?;
     let mut results = vec![1_usize];
     for i in 1..nums.len() - 1 {
-        let mut j = 0;
-        while j < i - 1 && !jolt_jump_ok(&nums, j + 1, i+1) {
-            j += 1;
-        }
-        results.push(results[j] * count_in_window(&nums, j+1, i));
+        let last = find_last_stable(&nums, i);
+        results.push(results[last] * count_in_window(&nums, last+1, i));
     }
     Ok(*results.last().unwrap())
+}
+
+fn find_last_stable(nums: &[usize], index_to_remove: usize) -> usize {
+    let mut j = 0;
+    while j < index_to_remove - 1 && !jolt_jump_ok(&nums, j + 1, index_to_remove+1) {
+        j += 1;
+    }
+    j
 }
 
 fn count_in_window(nums: &[usize], start: usize, end: usize) -> usize {
