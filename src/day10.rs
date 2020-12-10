@@ -1,6 +1,5 @@
 use advent_code_lib::all_lines;
 use std::io;
-use std::cmp::max;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let (count1, count3) = count_jolt_jumps(filename)?;
@@ -35,33 +34,6 @@ fn count_jolt_jumps(filename: &str) -> io::Result<(usize, usize)> {
 
 fn jolt_jump_ok(nums: &[usize], first: usize, second: usize) -> bool {
     nums[second] <= nums[first] + 3
-}
-
-fn deletable(nums: &[usize], start: usize, end: usize) -> bool {
-    start <= end && start > 0 && end < nums.len() - 1 && jolt_jump_ok(nums, start - 1, end + 1)
-}
-
-fn count_arrangements1(filename: &str) -> io::Result<usize> {
-    let nums = make_joltage_vec(filename)?;
-    let mut permutations = 1;
-    for i in 1..nums.len() - 1 {
-        if deletable(&nums, i, i) {
-            permutations *= 2;
-            let mut j = i - 1;
-            while deletable(&nums, j, j) {
-                j -= 1;
-            }
-            j += 1;
-            let mut subtractions = 0;
-            while !deletable(&nums, j, i) {
-                subtractions *= 2;
-                subtractions += 1;
-                j += 1;
-            }
-            permutations -= subtractions;
-        }
-    }
-    Ok(permutations)
 }
 
 // Base case: Start and end only: 1
@@ -212,6 +184,8 @@ mod tests {
         // Delete 3: 1, 2, 4, 5; 1, 4, 5; 2, 4, 5 (total: 3)
         // Delete 2: 1, 3, 4, 5; 3, 4, 5 (total: 2)
         // Delete 1: 2, 3, 4, 5 (total: 1)
+        //
+        // Turns out I undercounted by 3.
         assert_eq!(count_arrangements("day_10_self_example_3.txt").unwrap(), 14);
     }
 }
