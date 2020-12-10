@@ -79,11 +79,9 @@ fn valid_window(nums: &[usize], keep_window: &BitArray, window_start: usize) -> 
 
 fn kept_window(nums: &[usize], keep_window: &BitArray, window_start: usize) -> Vec<usize> {
     let mut num_window = vec![nums[window_start - 1]];
-    for i in 0..keep_window.len() as usize {
-        if keep_window.is_set(i as u64) {
-            num_window.push(nums[i + window_start]);
-        }
-    }
+    (0..keep_window.len() as usize)
+        .filter(|i| keep_window.is_set(*i as u64))
+        .for_each(|i| num_window.push(nums[i + window_start]));
     num_window.push(nums[window_start + keep_window.len() as usize]);
     num_window
 }
