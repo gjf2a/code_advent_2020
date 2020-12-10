@@ -62,13 +62,9 @@ fn find_last_stable(nums: &[usize], index_to_remove: usize) -> usize {
 }
 
 fn num_valid_in_window(nums: &[usize], start: usize, end: usize) -> usize {
-    let mut count = 0;
-    for window in BitArray::all_combinations(end - start + 1) {
-        if valid_window(nums, &window, start) {
-            count += 1;
-        }
-    }
-    count
+    BitArray::all_combinations(end - start + 1).iter()
+        .filter(|window| valid_window(nums, window, start))
+        .count()
 }
 
 fn valid_window(nums: &[usize], keep_window: &BitArray, window_start: usize) -> bool {
