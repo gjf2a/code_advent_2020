@@ -55,21 +55,6 @@ fn count_arrangements(filename: &str) -> io::Result<usize> {
     Ok(permutations)
 }
 
-fn count_arrangements1(filename: &str) -> io::Result<usize> {
-    let nums = make_joltage_vec(filename)?;
-    Ok(count_arrangements_help(&nums))
-}
-
-fn count_arrangements_help(nums: &[usize]) -> usize {
-    if nums.len() == 0 {
-        1
-    } else if deletable(&nums, 1, 1) {
-        2 * count_arrangements_help(&nums[1..])
-    } else {
-        count_arrangements_help(&nums[1..])
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
