@@ -53,9 +53,9 @@ fn count_arrangements(filename: &str) -> io::Result<usize> {
 }
 
 fn find_last_stable(nums: &[usize], index_to_remove: usize) -> usize {
-    let mut j = 0;
-    while j < index_to_remove - 1 && !jolt_jump_ok(&nums, j + 1, index_to_remove+1) {
-        j += 1;
+    let mut j = index_to_remove - 1;
+    while j > 0 && jolt_jump_ok(&nums, j, index_to_remove + 1) {
+        j -= 1;
     }
     j
 }
