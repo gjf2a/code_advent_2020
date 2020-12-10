@@ -1,9 +1,14 @@
 use advent_code_lib::all_lines;
 use std::io;
+use std::cmp::max;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let (count1, count3) = count_jolt_jumps(filename)?;
     Ok((count1 * count3).to_string())
+}
+
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    Ok(count_arrangements(filename)?.to_string())
 }
 
 fn make_joltage_vec(filename: &str) -> io::Result<Vec<usize>> {
@@ -28,11 +33,15 @@ fn count_jolt_jumps(filename: &str) -> io::Result<(usize, usize)> {
     Ok((count1, count3))
 }
 
-fn deletable(nums: &[usize], start: usize, end: usize) -> bool {
-    start <= end && start > 0 && end < nums.len() - 1 && nums[end + 1] - nums[start - 1] <= 3
+fn jolt_jump_ok(nums: &[usize], first: usize, second: usize) -> bool {
+    nums[second] <= nums[first] + 3
 }
 
-fn count_arrangements(filename: &str) -> io::Result<usize> {
+fn deletable(nums: &[usize], start: usize, end: usize) -> bool {
+    start <= end && start > 0 && end < nums.len() - 1 && jolt_jump_ok(nums, start - 1, end + 1)
+}
+
+fn count_arrangements1(filename: &str) -> io::Result<usize> {
     let nums = make_joltage_vec(filename)?;
     let mut permutations = 1;
     for i in 1..nums.len() - 1 {
@@ -44,7 +53,7 @@ fn count_arrangements(filename: &str) -> io::Result<usize> {
             }
             j += 1;
             let mut subtractions = 0;
-            while j < i && !deletable(&nums, j, i) {
+            while !deletable(&nums, j, i) {
                 subtractions *= 2;
                 subtractions += 1;
                 j += 1;
@@ -53,6 +62,71 @@ fn count_arrangements(filename: &str) -> io::Result<usize> {
         }
     }
     Ok(permutations)
+}
+
+// Base case: Start and end only: 1
+// Recursive case:
+// - Find lowest index whose value is successor - 3 or higher.
+// - Find all possibilities of current and predecessors
+// - Multiply
+// Implement with dynamic programming
+fn count_arrangements(filename: &str) -> io::Result<usize> {
+    let nums = make_joltage_vec(filename)?;
+    let mut results = vec![1_usize];
+    for i in 1..nums.len() - 1 {
+        let mut j = 0;
+        while j < i - 1 && !jolt_jump_ok(&nums, j + 1, i+1) {
+            j += 1;
+        }
+        results.push(results[j] * count_in_window(&nums, j+1, i));
+    }
+    Ok(*results.last().unwrap())
+}
+
+fn count_in_window(nums: &[usize], start: usize, end: usize) -> usize {
+    let mut count = 0;
+    for window in all_windows(end - start + 1) {
+        if valid_window(nums, &window, start) {
+            count += 1;
+        }
+    }
+    count
+}
+
+fn valid_window(nums: &[usize], keep_window: &[bool], window_start: usize) -> bool {
+    if keep_window.iter().all(|b| *b) {return true;}
+    if window_start == 0 || window_start + keep_window.len() >= nums.len() {return false;}
+    let mut kept = kept_window(nums, keep_window, window_start);
+    kept.insert(0, nums[window_start - 1]);
+    kept.push(nums[window_start + keep_window.len()]);
+    (1..kept.len()).all(|i| jolt_jump_ok(&kept, i-1, i))
+}
+
+fn kept_window(nums: &[usize], keep_window: &[bool], window_start: usize) -> Vec<usize> {
+    let mut num_window = vec![nums[window_start - 1]];
+    for i in 0..keep_window.len() {
+        if keep_window[i] {
+            num_window.push(nums[i + window_start]);
+        }
+    }
+    num_window.push(nums[window_start + keep_window.len()]);
+    num_window
+}
+
+fn all_windows(size: usize) -> Vec<Vec<bool>> {
+    if size == 0 {
+        vec![vec![]]
+    } else {
+        let mut result = Vec::new();
+        for mut candidate in all_windows(size - 1) {
+            let mut candidate1 = candidate.clone();
+            candidate1.push(false);
+            result.push(candidate1);
+            candidate.push(true);
+            result.push(candidate);
+        }
+        result
+    }
 }
 
 #[cfg(test)]
@@ -85,6 +159,38 @@ mod tests {
     }
 
     #[test]
+    fn test_all_windows() {
+        assert_eq!(all_windows(1), vec![vec![false], vec![true]]);
+        assert_eq!(all_windows(2), vec![vec![false, false], vec![false, true], vec![true, false], vec![true, true]]);
+    }
+
+    #[test]
+    fn test_count_in_window_1() {
+        let nums = vec![1, 2, 3, 4, 5];
+        let keepers = all_windows(3);
+        assert!(!valid_window(&nums, &keepers[0], 1));
+        for i in 1..keepers.len() {
+            assert!(valid_window(&nums, &keepers[i], 1));
+        }
+
+        assert_eq!(count_in_window(&nums, 1, 3), 7);
+    }
+
+    #[test]
+    fn test_count_in_window_2() {
+        let nums = vec![0, 1, 2, 3, 6];
+        assert_eq!(count_in_window(&nums, 1, 2), 4);
+        assert_eq!(count_in_window(&nums, 2, 3), 2);
+    }
+
+    #[test]
+    fn test_count_in_window_3() {
+        let nums = vec![0, 1, 2, 3, 4, 5, 8];
+        assert_eq!(count_in_window(&nums, 1, 2), 4);
+
+    }
+
+    #[test]
     fn test_self_2() {
         // Possibilities:
         // 1, 2, 3, 4
@@ -106,12 +212,7 @@ mod tests {
         // Delete 3: 1, 2, 4, 5; 1, 4, 5; 2, 4, 5 (total: 3)
         // Delete 2: 1, 3, 4, 5; 3, 4, 5 (total: 2)
         // Delete 1: 2, 3, 4, 5 (total: 1)
-
-        // Algorithm:
-        // 1: Deletable; p: 2
-        // 2: Deletable; p: 4
-        // 3: Deletable; p: 8
-        // 4: Deletable; p: 16 - 1 = 15
-        assert_eq!(count_arrangements("day_10_self_example_3.txt").unwrap(), 11);
+        assert_eq!(count_arrangements("day_10_self_example_3.txt").unwrap(), 14);
     }
 }
+
