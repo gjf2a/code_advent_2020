@@ -1,6 +1,7 @@
 use std::io;
-use advent_code_lib::{all_lines, DirIter};
+use advent_code_lib::{all_lines, DirIter, Dir};
 use std::fmt::{Display, Formatter, Error};
+use std::rc::Rc;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let gos = GameOfSeats::from(filename, 4)?;
@@ -31,11 +32,20 @@ impl Seat {
     }
 }
 
-#[derive(Debug,Clone,Eq,PartialEq)]
+#[derive(Clone)]
 pub struct GameOfSeats {
     seating: Vec<Vec<Seat>>,
-    max_adjacent: usize
+    max_adjacent: usize,
+    adjacency_func: Rc<dyn Fn(Dir,&GameOfSeats,usize,usize) -> Seat>
 }
+
+impl PartialEq for GameOfSeats {
+    fn eq(&self, other: &Self) -> bool {
+        self.seating == other.seating && self.max_adjacent == other.max_adjacent
+    }
+}
+
+impl Eq for GameOfSeats {}
 
 impl Display for GameOfSeats {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
@@ -55,6 +65,10 @@ impl GameOfSeats {
                     .collect())
                 .collect(),
             max_adjacent,
+            adjacency_func: Rc::new(|d:Dir,gos:&Self,col:usize,row:usize| {
+                let (col, row) = d.neighbor(col, row);
+                gos.seat_i(col, row)
+            })
         })
     }
 
@@ -85,8 +99,8 @@ impl GameOfSeats {
     pub fn num_adj_occupied(&self, col: usize, row: usize) -> Option<usize> {
         if self.in_bounds_u(col, row) {
             Some(DirIter::new()
-                .map(|d| d.neighbor(col, row))
-                .filter(|(col, row)| self.seat_i(*col, *row) == Seat::Occupied)
+                .map(|d| (self.adjacency_func)(d, self, col, row))
+                .filter(|s| *s == Seat::Occupied)
                 .count())
         } else {
             None
@@ -112,7 +126,8 @@ impl GameOfSeats {
                     })
                     .collect())
                 .collect(),
-            max_adjacent: self.max_adjacent
+            max_adjacent: self.max_adjacent,
+            adjacency_func: self.adjacency_func.clone()
         }
     }
 
@@ -238,7 +253,7 @@ L.#.L..#..
         for i in 0..EXPECTED.len() {
             assert_eq!(iter.next().unwrap().to_string(), EXPECTED[i]);
         }
-        assert_eq!(iter.next(), None);
+        assert!(iter.next() == None);
         Ok(())
     }
 
