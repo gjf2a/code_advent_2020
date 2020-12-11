@@ -1,11 +1,39 @@
 use std::io;
 use advent_code_lib::{all_lines, DirIter, Dir};
 use std::fmt::{Display, Formatter, Error};
-use std::rc::Rc;
+use Rule::*;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    let gos = GameOfSeats::from(filename, 4)?;
+    let gos = GameOfSeats::from(filename, Puzzle1)?;
     Ok(gos.stable_state().num_occupied().to_string())
+}
+
+#[derive(Debug,Clone,Copy,Eq,PartialEq)]
+pub enum Rule {
+    Puzzle1, Puzzle2
+}
+
+impl Rule {
+    pub fn too_many_people(&self, num_people: usize) -> bool {
+        num_people >= match self { Puzzle1 => 4, Puzzle2 => 5}
+    }
+
+    pub fn seat_occupied_in(&self, gos: &GameOfSeats, d: Dir, col: usize, row: usize) -> bool {
+        let (col, row) = match self {
+            Puzzle1 => d.neighbor(col, row),
+            Puzzle2 => {
+                let mut col = col as isize;
+                let mut row = row as isize;
+                while gos.in_bounds_i(col, row) && gos.seat_i(col, row) == Seat::Floor {
+                    let (dc, dr) = d.neighbor(col as usize, row as usize);
+                    col += dc;
+                    row += dr;
+                }
+                (col, row)
+            }
+        };
+        gos.seat_i(col, row) == Seat::Occupied
+    }
 }
 
 #[derive(Debug,Clone,Copy,Eq,PartialEq)]
@@ -32,20 +60,11 @@ impl Seat {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone,Debug,Eq,PartialEq)]
 pub struct GameOfSeats {
     seating: Vec<Vec<Seat>>,
-    max_adjacent: usize,
-    adjacency_func: Rc<dyn Fn(Dir,&GameOfSeats,usize,usize) -> Seat>
+    rule: Rule
 }
-
-impl PartialEq for GameOfSeats {
-    fn eq(&self, other: &Self) -> bool {
-        self.seating == other.seating && self.max_adjacent == other.max_adjacent
-    }
-}
-
-impl Eq for GameOfSeats {}
 
 impl Display for GameOfSeats {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
@@ -57,23 +76,17 @@ impl Display for GameOfSeats {
 }
 
 impl GameOfSeats {
-    pub fn from(filename: &str, max_adjacent: usize) -> io::Result<Self> {
+    pub fn from(filename: &str, rule: Rule) -> io::Result<Self> {
         Ok(GameOfSeats {
             seating: all_lines(filename)?
                 .map(|line| line.unwrap().chars()
                     .map(|c| Seat::from(c).unwrap())
                     .collect())
                 .collect(),
-            max_adjacent,
-            adjacency_func: Rc::new(|d:Dir,gos:&Self,col:usize,row:usize| {
-                let (col, row) = d.neighbor(col, row);
-                gos.seat_i(col, row)
-            })
-        })
+            rule})
     }
 
     pub fn height(&self) -> usize {self.seating.len()}
-
     pub fn width(&self) -> usize {self.seating[0].len()}
 
     pub fn seat_i(&self, col: isize, row: isize) -> Seat {
@@ -99,8 +112,7 @@ impl GameOfSeats {
     pub fn num_adj_occupied(&self, col: usize, row: usize) -> Option<usize> {
         if self.in_bounds_u(col, row) {
             Some(DirIter::new()
-                .map(|d| (self.adjacency_func)(d, self, col, row))
-                .filter(|s| *s == Seat::Occupied)
+                .filter(|d| self.rule.seat_occupied_in(self, *d, col, row))
                 .count())
         } else {
             None
@@ -120,14 +132,13 @@ impl GameOfSeats {
                         let adj = self.num_adj_occupied(col, row).unwrap();
                         if seat == Seat::Empty && adj == 0 {
                             Seat::Occupied
-                        } else if seat == Seat::Occupied && adj >= self.max_adjacent {
+                        } else if seat == Seat::Occupied && self.rule.too_many_people(adj) {
                             Seat::Empty
                         } else { seat }
                     })
                     .collect())
                 .collect(),
-            max_adjacent: self.max_adjacent,
-            adjacency_func: self.adjacency_func.clone()
+            rule: self.rule
         }
     }
 
@@ -242,13 +253,13 @@ L.#.L..#..
 
     #[test]
     fn test_create() {
-        let start = GameOfSeats::from("day_11_example_1.txt", 4).unwrap();
+        let start = GameOfSeats::from("day_11_example_1.txt", Puzzle1).unwrap();
         assert_eq!(start.to_string(), EXPECTED[0]);
     }
 
     #[test]
     fn test_example_1() -> io::Result<()> {
-        let start = GameOfSeats::from("day_11_example_1.txt", 4)?;
+        let start = GameOfSeats::from("day_11_example_1.txt", Puzzle1)?;
         let mut iter = start.iter();
         for i in 0..EXPECTED.len() {
             assert_eq!(iter.next().unwrap().to_string(), EXPECTED[i]);
