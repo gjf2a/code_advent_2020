@@ -78,7 +78,7 @@ impl GameOfSeats {
     pub fn width(&self) -> usize {self.seating[0].len()}
 
     pub fn seat(&self, p: Position) -> char {
-        if self.in_bounds_i(p.col, p.row) {
+        if self.in_bounds(p) {
             self.seating[p.row as usize][p.col as usize]
         } else {
             FLOOR
@@ -115,7 +115,7 @@ impl GameOfSeats {
         GameOfSeatsIterator {gos: Some(self.clone())}
     }
 
-    pub fn iterate(&self) -> GameOfSeats {
+    pub fn create_next(&self) -> GameOfSeats {
         GameOfSeats {
             seating: (0..self.height())
                 .map(|row| (0..self.width())
@@ -157,14 +157,14 @@ impl Iterator for GameOfSeatsIterator {
     fn next(&mut self) -> Option<Self::Item> {
         if self.gos != None {
             let gos = self.gos.as_ref().unwrap();
-            let candidate = gos.iterate();
-            if candidate == *gos {
+            let next = gos.create_next();
+            if next == *gos {
                 self.gos = None;
-                return Some(candidate);
+                return Some(next);
             } else {
-                let mut candidate = Some(candidate);
-                mem::swap(&mut candidate, &mut self.gos);
-                return candidate;
+                let mut result = Some(next);
+                mem::swap(&mut result, &mut self.gos);
+                return result;
             }
         }
         None
@@ -219,11 +219,11 @@ mod tests {
         assert_eq!(Puzzle2.projected_seat(&gos, Dir::N, c), FLOOR);
         assert_eq!(gos.num_adj_occupied(c).unwrap(), 0);
         assert_eq!(gos.iterated_seat_at(c), OCCUPIED);
-        gos = gos.iterate();
+        gos = gos.create_next();
         assert_eq!(Puzzle2.projected_seat(&gos, Dir::N, c), FLOOR);
         assert_eq!(gos.num_adj_occupied(c).unwrap(), 3);
         assert_eq!(gos.iterated_seat_at(c), OCCUPIED);
-        gos = gos.iterate();
+        gos = gos.create_next();
         assert_eq!(Puzzle2.projected_seat(&gos, Dir::N, c), FLOOR);
         assert_eq!(gos.num_adj_occupied(c).unwrap(), 1);
         assert_eq!(gos.seat(c), OCCUPIED);
