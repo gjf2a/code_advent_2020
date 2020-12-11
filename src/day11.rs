@@ -107,7 +107,7 @@ impl GameOfSeats {
 
     pub fn seat_i(&self, col: isize, row: isize) -> Seat {
         if self.in_bounds_i(col, row) {
-            self.seating[col as usize][row as usize]
+            self.seating[row as usize][col as usize]
         } else  {
             Seat::Floor
         }
