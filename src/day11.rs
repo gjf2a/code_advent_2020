@@ -1,9 +1,9 @@
 use std::io;
-use advent_code_lib::all_lines;
+use advent_code_lib::{all_lines, DirIter};
 use std::fmt::{Display, Formatter, Error};
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    let gos = GameOfSeats::from(filename)?;
+    let gos = GameOfSeats::from(filename, 4)?;
     Ok(gos.stable_state().num_occupied().to_string())
 }
 
@@ -31,61 +31,10 @@ impl Seat {
     }
 }
 
-#[derive(Debug,Clone,Copy,Eq,PartialEq)]
-pub enum Dir {
-    N, Ne, E, Se, S, Sw, W, Nw
-}
-
-impl Dir {
-    pub fn neighbor(&self, col: usize, row: usize) -> (isize,isize) {
-        let (d_col, d_row) = match self {
-            Dir::N  => ( 0, -1),
-            Dir::Ne => (-1, -1),
-            Dir::E  => (-1,  0),
-            Dir::Se => (-1,  1),
-            Dir::S  => ( 0,  1),
-            Dir::Sw => ( 1,  1),
-            Dir::W  => ( 1,  0),
-            Dir::Nw => ( 1, -1)
-        };
-        (col as isize + d_col, row as isize + d_row)
-    }
-}
-
-pub struct DirIter {
-    d: Option<Dir>
-}
-
-impl DirIter {
-    pub fn new() -> Self {DirIter {d: Some(Dir::N)}}
-}
-
-impl Iterator for DirIter {
-    type Item = Dir;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.d {
-            None => None,
-            Some(d) => {
-                self.d = match d {
-                    Dir::N  => Some(Dir::Ne),
-                    Dir::Ne => Some(Dir::E),
-                    Dir::E  => Some(Dir::Se),
-                    Dir::Se => Some(Dir::S),
-                    Dir::S  => Some(Dir::Sw),
-                    Dir::Sw => Some(Dir::W),
-                    Dir::W  => Some(Dir::Nw),
-                    Dir::Nw => None
-                };
-                Some(d)
-            }
-        }
-    }
-}
-
 #[derive(Debug,Clone,Eq,PartialEq)]
 pub struct GameOfSeats {
-    seating: Vec<Vec<Seat>>
+    seating: Vec<Vec<Seat>>,
+    max_adjacent: usize
 }
 
 impl Display for GameOfSeats {
@@ -98,12 +47,15 @@ impl Display for GameOfSeats {
 }
 
 impl GameOfSeats {
-    pub fn from(filename: &str) -> io::Result<Self> {
-        Ok(GameOfSeats {seating: all_lines(filename)?
-            .map(|line| line.unwrap().chars()
-                .map(|c| Seat::from(c).unwrap())
-                .collect())
-            .collect()})
+    pub fn from(filename: &str, max_adjacent: usize) -> io::Result<Self> {
+        Ok(GameOfSeats {
+            seating: all_lines(filename)?
+                .map(|line| line.unwrap().chars()
+                    .map(|c| Seat::from(c).unwrap())
+                    .collect())
+                .collect(),
+            max_adjacent,
+        })
     }
 
     pub fn height(&self) -> usize {self.seating.len()}
@@ -146,19 +98,22 @@ impl GameOfSeats {
     }
 
     pub fn iterate(&self) -> GameOfSeats {
-        GameOfSeats { seating: (0..self.height())
-            .map(|row| (0..self.width())
-                .map(|col| {
-                    let seat = self.seat(col, row);
-                    let adj = self.num_adj_occupied(col, row).unwrap();
-                    if seat == Seat::Empty && adj == 0 {
-                        Seat::Occupied
-                    } else if seat == Seat::Occupied && adj >= 4 {
-                        Seat::Empty
-                    } else {seat}
-                })
-                .collect())
-            .collect()}
+        GameOfSeats {
+            seating: (0..self.height())
+                .map(|row| (0..self.width())
+                    .map(|col| {
+                        let seat = self.seat(col, row);
+                        let adj = self.num_adj_occupied(col, row).unwrap();
+                        if seat == Seat::Empty && adj == 0 {
+                            Seat::Occupied
+                        } else if seat == Seat::Occupied && adj >= self.max_adjacent {
+                            Seat::Empty
+                        } else { seat }
+                    })
+                    .collect())
+                .collect(),
+            max_adjacent: self.max_adjacent
+        }
     }
 
     pub fn stable_state(&self) -> GameOfSeats {
@@ -201,7 +156,6 @@ impl Iterator for GameOfSeatsIterator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Dir::*;
 
     const EXPECTED: [&'static str; 6] = [
     "L.LL.LL.LL
@@ -272,21 +226,14 @@ L.#.L..#..
 "];
 
     #[test]
-    fn test_dir() {
-        assert_eq!(DirIter::new().collect::<Vec<Dir>>(), vec![N,Ne,E,Se,S,Sw,W,Nw]);
-        assert_eq!(DirIter::new().map(|d| d.neighbor(4, 4)).collect::<Vec<(isize,isize)>>(),
-            vec![(4, 3), (3, 3), (3, 4), (3, 5), (4, 5), (5, 5), (5, 4), (5, 3)]);
-    }
-
-    #[test]
     fn test_create() {
-        let start = GameOfSeats::from("day_11_example_1.txt").unwrap();
+        let start = GameOfSeats::from("day_11_example_1.txt", 4).unwrap();
         assert_eq!(start.to_string(), EXPECTED[0]);
     }
 
     #[test]
     fn test_example_1() -> io::Result<()> {
-        let start = GameOfSeats::from("day_11_example_1.txt")?;
+        let start = GameOfSeats::from("day_11_example_1.txt", 4)?;
         let mut iter = start.iter();
         for i in 0..EXPECTED.len() {
             assert_eq!(iter.next().unwrap().to_string(), EXPECTED[i]);
