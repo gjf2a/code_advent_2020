@@ -2,6 +2,11 @@ use std::io;
 use advent_code_lib::all_lines;
 use std::fmt::{Display, Formatter, Error};
 
+pub fn solve_1(filename: &str) -> io::Result<String> {
+    let gos = GameOfSeats::from(filename)?;
+    Ok(gos.stable_state().num_occupied().to_string())
+}
+
 #[derive(Debug,Clone,Copy,Eq,PartialEq)]
 pub enum Seat {
     Empty, Occupied, Floor
@@ -108,7 +113,7 @@ impl GameOfSeats {
     pub fn seat_i(&self, col: isize, row: isize) -> Seat {
         if self.in_bounds_i(col, row) {
             self.seating[row as usize][col as usize]
-        } else  {
+        } else {
             Seat::Floor
         }
     }
@@ -154,6 +159,18 @@ impl GameOfSeats {
                 })
                 .collect())
             .collect()}
+    }
+
+    pub fn stable_state(&self) -> GameOfSeats {
+        self.iter().last().unwrap()
+    }
+
+    pub fn num_occupied(&self) -> usize {
+        self.seating.iter()
+            .map(|row| row.iter()
+                .filter(|s| **s == Seat::Occupied)
+                .count())
+            .sum()
     }
 }
 
@@ -272,9 +289,14 @@ L.#.L..#..
         let start = GameOfSeats::from("day_11_example_1.txt")?;
         let mut iter = start.iter();
         for i in 0..EXPECTED.len() {
-            println!("i: {}", i);
             assert_eq!(iter.next().unwrap().to_string(), EXPECTED[i]);
         }
+        assert_eq!(iter.next(), None);
         Ok(())
+    }
+
+    #[test]
+    fn test_solve_1() {
+        assert_eq!(solve_1("day_11_example_1.txt").unwrap(), "37");
     }
 }
