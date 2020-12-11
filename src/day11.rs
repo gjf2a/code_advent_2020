@@ -137,7 +137,7 @@ impl GameOfSeats {
     }
 
     pub fn iter(&self) -> GameOfSeatsIterator {
-        GameOfSeatsIterator {gos: self.clone()}
+        GameOfSeatsIterator {gos: Some(self.clone())}
     }
 
     pub fn iterate(&self) -> GameOfSeats {
@@ -158,21 +158,26 @@ impl GameOfSeats {
 }
 
 pub struct GameOfSeatsIterator {
-    gos: GameOfSeats
+    gos: Option<GameOfSeats>
 }
 
 impl Iterator for GameOfSeatsIterator {
     type Item = GameOfSeats;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let next = self.gos.iterate();
-        if self.gos == next {
-            None
-        } else {
-            let result = self.gos.clone();
-            self.gos = next;
-            Some(result)
-        }
+        let result = self.gos.clone();
+        self.gos = match &self.gos {
+            None => None,
+            Some(gos) => {
+                let candidate = gos.iterate();
+                if candidate == *gos {
+                    None
+                } else {
+                    Some(candidate)
+                }
+            }
+        };
+        result
     }
 }
 
