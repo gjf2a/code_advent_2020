@@ -107,7 +107,7 @@ impl GameOfSeats {
 
     pub fn seat_i(&self, col: isize, row: isize) -> Seat {
         if self.in_bounds_i(col, row) {
-            self.seat(col as usize, row as usize)
+            self.seating[col as usize][row as usize]
         } else  {
             Seat::Floor
         }
@@ -186,18 +186,8 @@ mod tests {
     use super::*;
     use Dir::*;
 
-    #[test]
-    fn test_dir() {
-        assert_eq!(DirIter::new().collect::<Vec<Dir>>(), vec![N,Ne,E,Se,S,Sw,W,Nw]);
-        assert_eq!(DirIter::new().map(|d| d.neighbor(4, 4)).collect::<Vec<(isize,isize)>>(),
-            vec![(4, 3), (3, 3), (3, 4), (3, 5), (4, 5), (5, 5), (5, 4), (5, 3)]);
-    }
-
-    #[test]
-    fn test_example_1() -> io::Result<()> {
-        let start = GameOfSeats::from("day_11_example_1.txt")?;
-        let expected = vec![
-            "L.LL.LL.LL
+    const EXPECTED: [&'static str; 6] = [
+    "L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
 LLLL.LL.LL
@@ -206,8 +196,9 @@ L.LLLLL.LL
 ..L.L.....
 LLLLLLLLLL
 L.LLLLLL.L
-L.LLLLL.LL",
-            "#.##.##.##
+L.LLLLL.LL
+",
+    "#.##.##.##
 #######.##
 #.#.#..#..
 ####.##.##
@@ -216,8 +207,9 @@ L.LLLLL.LL",
 ..#.#.....
 ##########
 #.######.#
-#.#####.##",
-            "#.LL.L#.##
+#.#####.##
+",
+    "#.LL.L#.##
 #LLLLLL.L#
 L.L.L..L..
 #LLL.LL.L#
@@ -226,8 +218,9 @@ L.L.L..L..
 ..L.L.....
 #LLLLLLLL#
 #.LLLLLL.L
-#.#LLLL.##",
-            "#.##.L#.##
+#.#LLLL.##
+",
+    "#.##.L#.##
 #L###LL.L#
 L.#.#..#..
 #L##.##.L#
@@ -236,8 +229,9 @@ L.#.#..#..
 ..#.#.....
 #L######L#
 #.LL###L.L
-#.#L###.##",
-            "#.#L.L#.##
+#.#L###.##
+",
+    "#.#L.L#.##
 #LLL#LL.L#
 L.L.L..#..
 #LLL.##.L#
@@ -246,8 +240,9 @@ L.L.L..#..
 ..L.L.....
 #L#LLLL#L#
 #.LLLLLL.L
-#.#L#L#.##",
-            "#.#L.L#.##
+#.#L#L#.##
+",
+    "#.#L.L#.##
 #LLL#LL.L#
 L.#.L..#..
 #L##.##.L#
@@ -256,8 +251,30 @@ L.#.L..#..
 ..L.L.....
 #L#L##L#L#
 #.LLLLLL.L
-#.#L#L#.##"];
-        assert_eq!(start.iter().map(|gos| gos.to_string()).collect::<Vec<String>>(), expected);
+#.#L#L#.##
+"];
+
+    #[test]
+    fn test_dir() {
+        assert_eq!(DirIter::new().collect::<Vec<Dir>>(), vec![N,Ne,E,Se,S,Sw,W,Nw]);
+        assert_eq!(DirIter::new().map(|d| d.neighbor(4, 4)).collect::<Vec<(isize,isize)>>(),
+            vec![(4, 3), (3, 3), (3, 4), (3, 5), (4, 5), (5, 5), (5, 4), (5, 3)]);
+    }
+
+    #[test]
+    fn test_create() {
+        let start = GameOfSeats::from("day_11_example_1.txt").unwrap();
+        assert_eq!(start.to_string(), EXPECTED[0]);
+    }
+
+    #[test]
+    fn test_example_1() -> io::Result<()> {
+        let start = GameOfSeats::from("day_11_example_1.txt")?;
+        let mut iter = start.iter();
+        for i in 0..EXPECTED.len() {
+            println!("i: {}", i);
+            assert_eq!(iter.next().unwrap().to_string(), EXPECTED[i]);
+        }
         Ok(())
     }
 }
