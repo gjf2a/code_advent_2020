@@ -48,11 +48,11 @@ impl Dir {
 }
 
 pub struct DirIter {
-    d: Dir
+    d: Option<Dir>
 }
 
 impl DirIter {
-    pub fn new() -> Self {DirIter {d: Dir::N}}
+    pub fn new() -> Self {DirIter {d: Some(Dir::N)}}
 }
 
 impl Iterator for DirIter {
@@ -60,14 +60,20 @@ impl Iterator for DirIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.d {
-            Dir::N  => Some(Dir::Ne),
-            Dir::Ne => Some(Dir::E),
-            Dir::E  => Some(Dir::Se),
-            Dir::Se => Some(Dir::S),
-            Dir::S  => Some(Dir::Sw),
-            Dir::Sw => Some(Dir::W),
-            Dir::W  => Some(Dir::Nw),
-            Dir::Nw => None
+            None => None,
+            Some(d) => {
+                self.d = match d {
+                    Dir::N  => Some(Dir::Ne),
+                    Dir::Ne => Some(Dir::E),
+                    Dir::E  => Some(Dir::Se),
+                    Dir::Se => Some(Dir::S),
+                    Dir::S  => Some(Dir::Sw),
+                    Dir::Sw => Some(Dir::W),
+                    Dir::W  => Some(Dir::Nw),
+                    Dir::Nw => None
+                };
+                Some(d)
+            }
         }
     }
 }
