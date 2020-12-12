@@ -2,11 +2,12 @@ use advent_code_lib::{Position, Dir, for_each_line, normalize_degrees};
 use std::io;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    let mut s = Ship::new();
+    let mut ship_pos = Position::from((0, 0));
+    let mut ship_heading = Dir::E;
     for_each_line(filename, |line| Ok({
-        interpret_move_puzzle_1(&mut s, line);
+        interpret_move_puzzle_1(&mut ship_pos, &mut ship_heading, line);
     }))?;
-    Ok(manhattan_str(s.p))
+    Ok(manhattan_str(ship_pos))
 }
 
 pub fn manhattan_str(p: Position) -> String {
@@ -14,35 +15,15 @@ pub fn manhattan_str(p: Position) -> String {
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    let mut s = Ship::new();
+    let mut ship = Position::from((0, 0));
     let mut waypoint = Position::from((10, -1));
     for_each_line(filename, |line| Ok({
-        interpret_move_puzzle_2(&mut s, &mut waypoint, line);
+        interpret_move_puzzle_2(&mut ship, &mut waypoint, line);
     }))?;
-    Ok(manhattan_str(s.p))
+    Ok(manhattan_str(ship))
 }
 
-#[derive(Copy,Clone,Debug,Eq,PartialEq)]
-pub struct Ship {
-    p: Position,
-    heading: Dir
-}
-
-impl Ship {
-    pub fn new() -> Self {
-        Ship {p: Position {col: 0, row: 0}, heading: Dir::E}
-    }
-
-    pub fn go(&mut self, dir: Dir, dist: isize) {
-        position_jump(&mut self.p, dir, dist);
-    }
-
-    pub fn turn(&mut self, degrees: isize) {
-        self.heading = self.heading.rotated_degrees(degrees);
-    }
-}
-
-pub fn position_jump(p: &mut Position, dir: Dir, dist: isize) {
+pub fn jump(p: &mut Position, dir: Dir, dist: isize) {
     *p += dir.position_offset() * dist;
 }
 
@@ -60,28 +41,28 @@ pub fn decode_line(line: &str) -> (char,isize) {
     (instruction, value)
 }
 
-pub fn interpret_move_puzzle_1(s: &mut Ship, line: &str) {
+pub fn interpret_move_puzzle_1(ship_pos: &mut Position, ship_heading: &mut Dir, line: &str) {
     let (instruction, value) = decode_line(line);
     match instruction {
-        'N' => s.go(Dir::N, value),
-        'S' => s.go(Dir::S, value),
-        'E' => s.go(Dir::E, value),
-        'W' => s.go(Dir::W, value),
-        'F' => s.go(s.heading, value),
-        'L' => s.turn(-value),
-        'R' => s.turn(value),
+        'N' => jump(ship_pos, Dir::N, value),
+        'S' => jump(ship_pos, Dir::S, value),
+        'E' => jump(ship_pos, Dir::E, value),
+        'W' => jump(ship_pos, Dir::W, value),
+        'F' => jump(ship_pos, *ship_heading, value),
+        'L' => *ship_heading = ship_heading.rotated_degrees(-value),
+        'R' => *ship_heading = ship_heading.rotated_degrees(value),
         _ => panic!("Unrecognized instruction")
     }
 }
 
-pub fn interpret_move_puzzle_2(s: &mut Ship, w: &mut Position, line: &str) {
+pub fn interpret_move_puzzle_2(s: &mut Position, w: &mut Position, line: &str) {
     let (instruction, value) = decode_line(line);
     match instruction {
-        'N' => position_jump(w, Dir::N, value),
-        'S' => position_jump(w, Dir::S, value),
-        'E' => position_jump(w, Dir::E, value),
-        'W' => position_jump(w, Dir::W, value),
-        'F' => s.p += *w * value,
+        'N' => jump(w, Dir::N, value),
+        'S' => jump(w, Dir::S, value),
+        'E' => jump(w, Dir::E, value),
+        'W' => jump(w, Dir::W, value),
+        'F' => *s += *w * value,
         'L' => rotate_waypoint(w, -value),
         'R' => rotate_waypoint(w, value),
         _ => panic!("Unrecognized instruction")
