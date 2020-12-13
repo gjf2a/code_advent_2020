@@ -17,15 +17,6 @@ fn puzzle_1_inputs(filename: &str) -> io::Result<(usize, Vec<usize>)> {
     Ok((earliest_departure, busses))
 }
 
-fn puzzle_2_inputs(filename: &str) -> io::Result<Vec<(usize,usize)>> {
-    let lines = all_lines(filename)?.skip(1).next().unwrap()?;
-    let busses: Vec<&str> = lines.split(',').collect();
-    Ok((0..busses.len())
-           .filter(|i| busses[*i] != "x")
-           .map(|i| (busses[i].parse::<usize>().unwrap(), i))
-           .collect())
-}
-
 fn best_bus_and_wait(busses: &[usize], earliest_departure: usize) -> (usize, usize) {
     let (departure, best_bus) = busses.iter()
         .map(|bus| (bus_departure(*bus, earliest_departure), *bus))
@@ -35,6 +26,23 @@ fn best_bus_and_wait(busses: &[usize], earliest_departure: usize) -> (usize, usi
 
 fn bus_departure(bus: usize, earliest_departure: usize) -> usize {
     earliest_departure + bus - earliest_departure % bus
+}
+
+fn puzzle_2_inputs(filename: &str) -> io::Result<Vec<(usize,usize)>> {
+    let line_2 = all_lines(filename)?.skip(1).next().unwrap()?;
+    Ok(puzzle_2_line(line_2.as_str()))
+}
+
+fn puzzle_2_line(line: &str) -> Vec<(usize,usize)> {
+    let busses: Vec<&str> = line.split(',').collect();
+    (0..busses.len())
+        .filter(|i| busses[*i] != "x")
+        .map(|i| (busses[i].parse::<usize>().unwrap(), i))
+        .collect()
+}
+
+fn earliest_timestamp_for(bus_offsets: &[(usize,usize)]) -> usize {
+    0
 }
 
 #[cfg(test)]
@@ -70,5 +78,17 @@ mod tests {
     fn test_puzzle_2_inputs() {
         assert_eq!(puzzle_2_inputs("day_13_example.txt").unwrap(),
                    vec![(7, 0), (13, 1), (59, 4), (31, 6), (19, 7)]);
+    }
+
+    #[test]
+    fn test_2_1() {
+        assert_eq!(earliest_timestamp_for(&puzzle_2_inputs("day_13_example.txt").unwrap()), 1068788);
+    }
+
+    #[test]
+    fn test_2_2() {
+        for (line, goal) in &[("17,x,13,19", 3417), ("67,7,59,61", 754018), ("67,x,7,59,61", 779210), ("67,7,x,59,61", 1261476), ("1789,37,47,1889", 1202161486)] {
+            assert_eq!(earliest_timestamp_for(&puzzle_2_line(line)), *goal);
+        }
     }
 }
