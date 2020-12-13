@@ -41,13 +41,22 @@ fn puzzle_2_line(line: &str) -> Vec<(usize,usize)> {
         .collect()
 }
 
+pub fn solve_2() -> io::Result<String> {
+    let bus_offsets = puzzle_2_inputs("day_13_input.txt")?;
+    Ok(earliest_timestamp_for(&bus_offsets).to_string())
+}
+
 fn earliest_timestamp_for(bus_offsets: &[(usize,usize)]) -> usize {
-    earliest_timestamp_brute_force(bus_offsets)
+    let (max_bus, max_offset) = bus_offsets.iter().max().unwrap();
+    let mut timestamp = *max_bus;
+    while !timestamp_works(timestamp - *max_offset, bus_offsets) {timestamp += *max_bus;}
+    timestamp - *max_offset
 }
 
 fn earliest_timestamp_brute_force(bus_offsets: &[(usize, usize)]) -> usize {
-    let mut timestamp = bus_offsets[0].0;
-    while !timestamp_works(timestamp, bus_offsets) {timestamp += bus_offsets[0].0;}
+    let interval = bus_offsets[0].0;
+    let mut timestamp = interval;
+    while !timestamp_works(timestamp, bus_offsets) {timestamp += interval;}
     timestamp
 }
 
