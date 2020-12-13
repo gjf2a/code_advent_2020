@@ -53,13 +53,6 @@ fn earliest_timestamp_for(bus_offsets: &[(usize,usize)]) -> usize {
     timestamp - *max_offset
 }
 
-fn earliest_timestamp_brute_force(bus_offsets: &[(usize, usize)]) -> usize {
-    let interval = bus_offsets[0].0;
-    let mut timestamp = interval;
-    while !timestamp_works(timestamp, bus_offsets) {timestamp += interval;}
-    timestamp
-}
-
 fn timestamp_works(timestamp: usize, bus_offsets: &[(usize,usize)]) -> bool {
     bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset) % *bus == 0)
 }
