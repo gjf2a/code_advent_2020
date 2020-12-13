@@ -42,7 +42,17 @@ fn puzzle_2_line(line: &str) -> Vec<(usize,usize)> {
 }
 
 fn earliest_timestamp_for(bus_offsets: &[(usize,usize)]) -> usize {
-    0
+    earliest_timestamp_brute_for(bus_offsets)
+}
+
+fn earliest_timestamp_brute_for(bus_offsets: &[(usize,usize)]) -> usize {
+    let mut timestamp = 1;
+    while !timestamp_works(timestamp, bus_offsets) {timestamp += 1;}
+    timestamp
+}
+
+fn timestamp_works(timestamp: usize, bus_offsets: &[(usize,usize)]) -> bool {
+    bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset) % *bus == 0)
 }
 
 #[cfg(test)]
@@ -85,10 +95,19 @@ mod tests {
         assert_eq!(earliest_timestamp_for(&puzzle_2_inputs("day_13_example.txt").unwrap()), 1068788);
     }
 
+    fn test_line(line: &str, goal: usize) {
+        assert_eq!(earliest_timestamp_for(&puzzle_2_line(line)), goal);
+    }
+
     #[test]
     fn test_2_2() {
-        for (line, goal) in &[("17,x,13,19", 3417), ("67,7,59,61", 754018), ("67,x,7,59,61", 779210), ("67,7,x,59,61", 1261476), ("1789,37,47,1889", 1202161486)] {
-            assert_eq!(earliest_timestamp_for(&puzzle_2_line(line)), *goal);
+        test_line("17,x,13,19", 3417);
+    }
+
+    #[test]
+    fn test_2_3() {
+        for (line, goal) in &[("67,7,59,61", 754018), ("67,x,7,59,61", 779210), ("67,7,x,59,61", 1261476), ("1789,37,47,1889", 1202161486)] {
+            test_line(line, *goal);
         }
     }
 }
