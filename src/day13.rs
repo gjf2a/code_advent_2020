@@ -42,12 +42,12 @@ fn puzzle_2_line(line: &str) -> Vec<(usize,usize)> {
 }
 
 fn earliest_timestamp_for(bus_offsets: &[(usize,usize)]) -> usize {
-    earliest_timestamp_brute_for(bus_offsets)
+    earliest_timestamp_brute_force(bus_offsets)
 }
 
-fn earliest_timestamp_brute_for(bus_offsets: &[(usize,usize)]) -> usize {
-    let mut timestamp = 1;
-    while !timestamp_works(timestamp, bus_offsets) {timestamp += 1;}
+fn earliest_timestamp_brute_force(bus_offsets: &[(usize, usize)]) -> usize {
+    let mut timestamp = bus_offsets[0].0;
+    while !timestamp_works(timestamp, bus_offsets) {timestamp += bus_offsets[0].0;}
     timestamp
 }
 
@@ -101,8 +101,13 @@ mod tests {
 
     #[test]
     fn test_2_2() {
-        for (line, goal) in &[("17,x,13,19", 3417), ("67,7,59,61", 754018), ("67,x,7,59,61", 779210), ("67,7,x,59,61", 1261476)/*, ("1789,37,47,1889", 1202161486)*/] {
+        for (line, goal) in &[("17,x,13,19", 3417), ("67,7,59,61", 754018), ("67,x,7,59,61", 779210), ("67,7,x,59,61", 1261476)] {
             test_line(line, *goal);
         }
+    }
+
+    #[test]
+    fn test_2_3() {
+        test_line("1789,37,47,1889", 1202161486);
     }
 }
