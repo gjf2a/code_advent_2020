@@ -1,6 +1,8 @@
 use std::io;
 use advent_code_lib::all_lines;
 use std::collections::BTreeMap;
+use std::iter::SkipWhile;
+use std::str::Chars;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Mask1::from("").solve(filename)
@@ -63,8 +65,7 @@ impl Mask1 {
     pub fn replace_from(&mut self, line: &str) {
         self.on = 0;
         self.off = 0;
-        line.chars().skip_while(|c| "mask = ".contains(*c))
-            .for_each(|c| self.add(c));
+        skip_mask_str(line).for_each(|c| self.add(c));
     }
 
     pub fn add(&mut self, c: char) {
@@ -103,6 +104,11 @@ impl Solver for Mask2 {
     }
 }
 
+fn skip_mask_str(line: &str) -> SkipWhile<Chars, fn(&char)->bool> {
+    line.chars().skip_while(|c| "mask = ".contains(*c))
+}
+
+
 impl Mask2 {
     pub fn from(line: &str) -> Self {
         let mut mask = Mask2 {versions: Vec::new()};
@@ -112,7 +118,7 @@ impl Mask2 {
 
     pub fn replace_from(&mut self, line: &str) {
         self.versions = vec![Mask1::from("")];
-        line.chars().skip_while(|c| "mask = ".contains(*c))
+        skip_mask_str(line)
             .for_each(|c| {
                 match c {
                     '0' => self.add_to_all('X'),
