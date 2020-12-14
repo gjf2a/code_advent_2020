@@ -52,50 +52,51 @@ fn earliest_timestamp_for(bus_offsets: &[(usize,usize)]) -> usize {
     while !timestamp_works(timestamp - *max_offset, bus_offsets) {timestamp += *max_bus;}
     timestamp - *max_offset
 }
-
+/*
 fn earliest_timestamp_brute_force(bus_offsets: &[(usize, usize)]) -> usize {
     let interval = bus_offsets[0].0;
     let mut timestamp = interval;
     while !timestamp_works(timestamp, bus_offsets) {timestamp += interval;}
     timestamp
 }
-
-fn earliest_pair_timestamp(bus1: usize, bus2: usize, interval: usize) -> usize {
-    let mut timestamp = bus1;
-    while !timestamp_works(timestamp, &[(bus1,0), (bus2,1)]) {timestamp += bus1;}
-    timestamp * interval
-}
-
-fn earliest_pair_timestamps(bus_offsets: &[(usize, usize)]) -> Vec<usize> {
-    let mut iter = bus_offsets.iter();
-    let base_bus = iter.next().unwrap().0;
-    iter.map(|(bus, offset)| earliest_pair_timestamp(base_bus, *bus, *offset))
-        .collect()
-}
+*/
 
 fn timestamp_works(timestamp: usize, bus_offsets: &[(usize,usize)]) -> bool {
     bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset) % *bus == 0)
 }
 
-fn gcd(a: usize, b: usize) -> usize {
-    if b == 0 {
-        a
-    } else {
-        gcd(b, a % b)
-    }
-}
-
-fn lcm(a: usize, b: usize) -> usize {
-    (a * b) / gcd(a, b)
-}
-
-fn lcm_from(nums: &[usize]) -> usize {
-    nums.iter().fold(1, |acc, x| lcm(acc, *x))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn earliest_pair_timestamp(bus1: usize, bus2: usize, interval: usize) -> usize {
+        let mut timestamp = bus1;
+        while !timestamp_works(timestamp, &[(bus1,0), (bus2,1)]) {timestamp += bus1;}
+        timestamp * interval
+    }
+
+    fn earliest_pair_timestamps(bus_offsets: &[(usize, usize)]) -> Vec<usize> {
+        let mut iter = bus_offsets.iter();
+        let base_bus = iter.next().unwrap().0;
+        iter.map(|(bus, offset)| earliest_pair_timestamp(base_bus, *bus, *offset))
+            .collect()
+    }
+
+    fn gcd(a: usize, b: usize) -> usize {
+        if b == 0 {
+            a
+        } else {
+            gcd(b, a % b)
+        }
+    }
+
+    fn lcm(a: usize, b: usize) -> usize {
+        (a * b) / gcd(a, b)
+    }
+
+    fn lcm_from(nums: &[usize]) -> usize {
+        nums.iter().fold(1, |acc, x| lcm(acc, *x))
+    }
 
     #[test]
     fn test_departure_1() {
@@ -160,6 +161,7 @@ mod tests {
         }
     }
 
+    /*
     #[test]
     fn idea2() {
         for i in 1..202 {
@@ -167,4 +169,5 @@ mod tests {
 
         }
     }
+    */
 }
