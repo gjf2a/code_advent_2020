@@ -58,7 +58,7 @@ mod tests {
 
     #[test]
     fn test_1() {
-        assert_eq!(solve_1("day_6_example.txt").unwrap(), "11");
+        assert_eq!(solve_1("in/day6_ex.txt").unwrap(), "11");
     }
 
     #[test]
@@ -79,6 +79,6 @@ mod tests {
 
     #[test]
     fn test_2() {
-        assert_eq!(solve_2("day_6_example.txt").unwrap(), "6");
+        assert_eq!(solve_2("in/day6_ex.txt").unwrap(), "6");
     }
 }

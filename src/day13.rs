@@ -42,7 +42,7 @@ fn puzzle_2_line(line: &str) -> Vec<(usize,usize)> {
 }
 
 pub fn solve_2() -> io::Result<String> {
-    let bus_offsets = puzzle_2_inputs("day_13_input.txt")?;
+    let bus_offsets = puzzle_2_inputs("day13.txt")?;
     Ok(earliest_timestamp_for(&bus_offsets).to_string())
 }
 
@@ -113,25 +113,25 @@ mod tests {
 
     #[test]
     fn test_puzzle_1_inputs() {
-        let (depart, busses) = puzzle_1_inputs("day_13_example.txt").unwrap();
+        let (depart, busses) = puzzle_1_inputs("in/day13_ex.txt").unwrap();
         assert_eq!(depart, 939);
         assert_eq!(busses, vec![7,13,59,31,19]);
     }
 
     #[test]
     fn test_solve_1() {
-        assert_eq!(solve_1("day_13_example.txt").unwrap(), "295");
+        assert_eq!(solve_1("in/day13_ex.txt").unwrap(), "295");
     }
 
     #[test]
     fn test_puzzle_2_inputs() {
-        assert_eq!(puzzle_2_inputs("day_13_example.txt").unwrap(),
+        assert_eq!(puzzle_2_inputs("in/day13_ex.txt").unwrap(),
                    vec![(7, 0), (13, 1), (59, 4), (31, 6), (19, 7)]);
     }
 
     #[test]
     fn test_2_1() {
-        assert_eq!(earliest_timestamp_for(&puzzle_2_inputs("day_13_example.txt").unwrap()), 1068781);
+        assert_eq!(earliest_timestamp_for(&puzzle_2_inputs("in/day13_ex.txt").unwrap()), 1068781);
     }
 
     fn test_line(line: &str, goal: usize) {

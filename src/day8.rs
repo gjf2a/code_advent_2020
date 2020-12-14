@@ -99,11 +99,11 @@ mod tests {
 
     #[test]
     pub fn test_solve_1() {
-        assert_eq!(solve_1("day_8_example.txt").unwrap(), "5");
+        assert_eq!(solve_1("in/day8_ex.txt").unwrap(), "5");
     }
 
     #[test]
     pub fn test_solve_2() {
-        assert_eq!(solve_2("day_8_example.txt").unwrap(), "8");
+        assert_eq!(solve_2("in/day8_ex.txt").unwrap(), "8");
     }
 }

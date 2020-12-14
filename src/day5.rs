@@ -6,7 +6,7 @@ use std::iter::Map;
 use std::fmt::Display;
 
 fn seat_ids() -> io::Result<Map<Lines<BufReader<File>>, fn(io::Result<String>) -> usize>> {
-    Ok(all_lines("day_5_input.txt")?
+    Ok(all_lines("in/day5.txt")?
         .map(|line| BoardingPass::from(line.unwrap().as_str()).seat_id()))
 }
 

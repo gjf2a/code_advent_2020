@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_create() {
-        let start = GameOfSeats::from("day_11_example_1.txt", Puzzle1).unwrap();
+        let start = GameOfSeats::from("in/day11_ex1.txt", Puzzle1).unwrap();
         assert_eq!(start.to_string(), EXPECTED_1[0]);
     }
 
@@ -192,7 +192,7 @@ mod tests {
     }
 
     fn test_example(rule: Rule, targets: &[&str]) -> io::Result<()> {
-        let start = GameOfSeats::from("day_11_example_1.txt", rule)?;
+        let start = GameOfSeats::from("in/day11_ex1.txt", rule)?;
         let mut iter = start.iter();
         for i in 0..targets.len() {
             println!("Testing target {}", i);
@@ -204,17 +204,17 @@ mod tests {
 
     #[test]
     fn test_solve_1() {
-        assert_eq!(solve_1("day_11_example_1.txt").unwrap(), "37");
+        assert_eq!(solve_1("in/day11_ex1.txt").unwrap(), "37");
     }
 
     #[test]
     fn test_solve_2() {
-        assert_eq!(solve_2("day_11_example_1.txt").unwrap(), "26");
+        assert_eq!(solve_2("in/day11_ex1.txt").unwrap(), "26");
     }
 
     #[test]
     fn test_solve_2_corners() {
-        let mut gos = GameOfSeats::from("day_11_example_1.txt", Puzzle2).unwrap();
+        let mut gos = GameOfSeats::from("in/day11_ex1.txt", Puzzle2).unwrap();
         let c = Position {row: 0, col: 0};
         assert_eq!(Puzzle2.projected_seat(&gos, Dir::N, c), FLOOR);
         assert_eq!(gos.num_adj_occupied(c).unwrap(), 0);

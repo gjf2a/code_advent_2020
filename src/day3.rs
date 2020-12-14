@@ -50,16 +50,16 @@ mod tests {
 
     #[test]
     fn example_1() {
-        assert_eq!(solve_1("day_3_example.txt").unwrap(), "7");
+        assert_eq!(solve_1("in/day3_ex.txt").unwrap(), "7");
     }
 
     #[test]
     fn example_2() {
-        assert_eq!(solve_2("day_3_example.txt").unwrap(), "336")
+        assert_eq!(solve_2("in/day3_ex.txt").unwrap(), "336")
     }
 
     #[test]
     fn example_3() {
-        assert_eq!(solve_slope("day_3_example.txt", 1, 2).unwrap(), 2)
+        assert_eq!(solve_slope("in/day3_ex.txt", 1, 2).unwrap(), 2)
     }
 }

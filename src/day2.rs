@@ -2,11 +2,11 @@ use std::io;
 use advent_code_lib::pass_counter;
 
 pub fn solve_1() -> io::Result<String> {
-    pass_counter("day_2_input.txt", line_valid_password_1)
+    pass_counter("in/day2.txt", line_valid_password_1)
 }
 
 pub fn solve_2() -> io::Result<String> {
-    pass_counter("day_2_input.txt", line_valid_password_2)
+    pass_counter("in/day2.txt", line_valid_password_2)
 }
 
 fn line_valid_password_1(line: &str) -> bool {

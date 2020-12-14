@@ -3,11 +3,11 @@ use std::io;
 use std::collections::VecDeque;
 
 pub fn solve_1() -> io::Result<String> {
-    Ok(find_failing_xmas_num(&file2nums("day_9_input.txt")?, 25).unwrap().to_string())
+    Ok(find_failing_xmas_num(&file2nums("in/day9.txt")?, 25).unwrap().to_string())
 }
 
 pub fn solve_2() -> io::Result<String> {
-    Ok(find_encryption_weakness(&file2nums("day_9_input.txt")?, 25).unwrap().to_string())
+    Ok(find_encryption_weakness(&file2nums("in/day9.txt")?, 25).unwrap().to_string())
 }
 
 fn find_encryption_weakness(nums: &Vec<isize>, preamble_length: usize) -> Option<isize> {
@@ -73,11 +73,11 @@ mod tests {
 
     #[test]
     fn test_puzzle_1() {
-        assert_eq!(find_failing_xmas_num(&file2nums("day_9_example.txt").unwrap(), 5).unwrap(), 127);
+        assert_eq!(find_failing_xmas_num(&file2nums("in/day9_ex.txt").unwrap(), 5).unwrap(), 127);
     }
 
     #[test]
     fn test_puzzle_2() {
-        assert_eq!(find_encryption_weakness(&file2nums("day_9_example.txt").unwrap(), 5).unwrap(), 62);
+        assert_eq!(find_encryption_weakness(&file2nums("in/day9_ex.txt").unwrap(), 5).unwrap(), 62);
     }
 }

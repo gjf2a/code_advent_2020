@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     pub fn test_create_example() {
-        let graph = create_graph_from("day_7_example.txt").unwrap();
+        let graph = create_graph_from("in/day7_ex1.txt").unwrap();
         [("light red", "bright white", 1),
             ("light red", "muted yellow", 2),
             ("dark orange", "bright white", 3),
@@ -162,12 +162,12 @@ mod tests {
 
     #[test]
     pub fn test_solve_1() {
-        assert_eq!(solve_1("day_7_example.txt").unwrap(), "4");
+        assert_eq!(solve_1("in/day7_ex1.txt").unwrap(), "4");
     }
 
     #[test]
     pub fn test_bag_sum() {
-        let graph = create_graph_from("day_7_example.txt").unwrap();
+        let graph = create_graph_from("in/day7_ex1.txt").unwrap();
         [("faded blue", 0), ("dotted black", 0), ("vibrant plum", 11), ("dark olive", 7),
             ("shiny gold", 32), ("muted yellow", 75)].iter()
             .for_each(|(color, count)| {
@@ -177,11 +177,11 @@ mod tests {
 
     #[test]
     pub fn test_solve_2_1() {
-        assert_eq!(solve_2("day_7_example.txt").unwrap(), "32");
+        assert_eq!(solve_2("in/day7_ex1.txt").unwrap(), "32");
     }
 
     #[test]
     pub fn test_solve_2_2() {
-        assert_eq!(solve_2("day_7_example_2.txt").unwrap(), "126");
+        assert_eq!(solve_2("in/day7_ex2.txt").unwrap(), "126");
     }
 }

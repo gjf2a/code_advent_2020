@@ -88,27 +88,27 @@ mod tests {
 
     #[test]
     fn test_ex_1_1() {
-        assert_eq!(count_jolt_jumps("day_10_example_1.txt").unwrap(), (7, 5));
+        assert_eq!(count_jolt_jumps("in/day10_ex1.txt").unwrap(), (7, 5));
     }
 
     #[test]
     fn text_ex_2_1() {
-        assert_eq!(count_jolt_jumps("day_10_example_2.txt").unwrap(), (22, 10));
+        assert_eq!(count_jolt_jumps("in/day10_ex2.txt").unwrap(), (22, 10));
     }
 
     #[test]
     fn test_ex_1_2() {
-        assert_eq!(count_arrangements("day_10_example_1.txt").unwrap(), 8);
+        assert_eq!(count_arrangements("in/day10_ex1.txt").unwrap(), 8);
     }
 
     #[test]
     fn test_ex_2_2() {
-        assert_eq!(count_arrangements("day_10_example_2.txt").unwrap(), 19208);
+        assert_eq!(count_arrangements("in/day10_ex2.txt").unwrap(), 19208);
     }
 
     #[test]
     fn test_self_1() {
-        assert_eq!(count_arrangements("day_10_self_example_1.txt").unwrap(), 4);
+        assert_eq!(count_arrangements("in/day10_self1.txt").unwrap(), 4);
     }
 
     #[test]
@@ -147,7 +147,7 @@ mod tests {
         // 2, 4
         // 3, 4
         // 2, 3, 4
-        assert_eq!(count_arrangements("day_10_self_example_2.txt").unwrap(), 7)
+        assert_eq!(count_arrangements("in/day10_self2.txt").unwrap(), 7)
     }
 
     #[test]
@@ -161,7 +161,7 @@ mod tests {
         // Delete 1: 2, 3, 4, 5 (total: 1)
         //
         // Turns out I undercounted by 3, as there are 14 rather than 11.
-        assert_eq!(count_arrangements("day_10_self_example_3.txt").unwrap(), 14);
+        assert_eq!(count_arrangements("in/day10_self3.txt").unwrap(), 14);
     }
 }
 

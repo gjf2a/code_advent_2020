@@ -75,17 +75,17 @@ mod tests {
 
     #[test]
     pub fn test_1() {
-        assert_eq!(solve_1("day_12_example.txt").unwrap(), "25");
+        assert_eq!(solve_1("in/day12_ex.txt").unwrap(), "25");
     }
 
     #[test]
     pub fn test_solution_1() {
-        assert_eq!(solve_1("day_12_input.txt").unwrap(), "441");
+        assert_eq!(solve_1("in/day12.txt").unwrap(), "441");
     }
 
     #[test]
     pub fn test_2() {
-        assert_eq!(solve_2("day_12_example.txt").unwrap(), "286");
+        assert_eq!(solve_2("in/day12_ex.txt").unwrap(), "286");
     }
 
     #[test]

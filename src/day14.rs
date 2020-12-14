@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_1() {
-        assert_eq!(solve_1("day_14_ex.txt").unwrap(), "165");
+        assert_eq!(solve_1("in/day14_ex.txt").unwrap(), "165");
     }
 
     #[test]
@@ -183,11 +183,11 @@ mod tests {
 
     #[test]
     fn test_solve_1() {
-        assert_eq!(solve_1("day14.txt").unwrap(), "17481577045893");
+        assert_eq!(solve_1("in/day14.txt").unwrap(), "17481577045893");
     }
 
     #[test]
     fn test_solve_2() {
-        assert_eq!(solve_2("day14.txt").unwrap(), "4160009892257");
+        assert_eq!(solve_2("in/day14.txt").unwrap(), "4160009892257");
     }
 }

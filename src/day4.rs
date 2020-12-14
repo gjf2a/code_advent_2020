@@ -108,12 +108,12 @@ mod tests {
             "iyr"=>"2011", "ecl"=>"brn", "hgt"=>"59in")
         ]);
 
-        assert_eq!(fields_and_values_from("day_4_example.txt").unwrap().objects(), example_target);
+        assert_eq!(fields_and_values_from("in/day4_ex1.txt").unwrap().objects(), example_target);
     }
 
     #[test]
     fn test_1_example() {
-        assert_eq!(solve_1("day_4_example.txt").unwrap(), "2");
+        assert_eq!(solve_1("in/day4_ex1.txt").unwrap(), "2");
     }
 
     #[test]
@@ -132,11 +132,11 @@ mod tests {
 
     #[test]
     fn test_2_example_1() {
-        assert_eq!(solve_2("day_4_example.txt").unwrap(), "2");
+        assert_eq!(solve_2("in/day4_ex1.txt").unwrap(), "2");
     }
 
     #[test]
     fn test_2_example_2() {
-        assert_eq!(solve_2("day_4_example_2.txt").unwrap(), "4");
+        assert_eq!(solve_2("in/day4_ex2.txt").unwrap(), "4");
     }
 }

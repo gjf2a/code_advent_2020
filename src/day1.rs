@@ -2,7 +2,7 @@ use std::io;
 use advent_code_lib::file2nums;
 
 pub fn solve_1() -> io::Result<String> {
-    let nums = file2nums("day_1_input.txt")?;
+    let nums = file2nums("in/day1.txt")?;
     for i in 0..nums.len() {
         for j in i..nums.len() {
             if nums[i] + nums[j] == 2020 {
@@ -14,7 +14,7 @@ pub fn solve_1() -> io::Result<String> {
 }
 
 pub fn solve_2() -> io::Result<String> {
-    let nums = file2nums("day_1_input.txt")?;
+    let nums = file2nums("in/day1.txt")?;
     for i in 0..nums.len() {
         for j in i..nums.len() {
             for k in j..nums.len() {
