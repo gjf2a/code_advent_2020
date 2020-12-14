@@ -108,7 +108,6 @@ fn skip_mask_str(line: &str) -> SkipWhile<Chars, fn(&char)->bool> {
     line.chars().skip_while(|c| "mask = ".contains(*c))
 }
 
-
 impl Mask2 {
     pub fn from(line: &str) -> Self {
         let mut mask = Mask2 {versions: Vec::new()};
