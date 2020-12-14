@@ -90,11 +90,7 @@ impl GameOfSeats {
     }
 
     pub fn in_bounds(&self, p: Position) -> bool {
-        self.in_bounds_i(p.col, p.row)
-    }
-
-    pub fn in_bounds_i(&self, col: isize, row: isize) -> bool {
-        col >= 0 && row >= 0 && self.in_bounds_u(col as usize, row as usize)
+        p.col >= 0 && p.row >= 0 && self.in_bounds_u(p.col as usize, p.row as usize)
     }
 
     pub fn in_bounds_u(&self, col: usize, row: usize) -> bool {

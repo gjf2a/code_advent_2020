@@ -36,9 +36,9 @@ pub trait Solver {
 }
 
 fn split_mem(line: &str) -> (u64, u64) {
-    let tokens: Vec<_> = line.split(&['[', ']', '=', ' '][..]).filter(|t| t.len() > 0).collect();
-    let idx = tokens[1].parse::<u64>().unwrap();
-    let val = tokens[2].parse::<u64>().unwrap();
+    let mut tokens = line.split(&['[', ']', '=', ' '][..]).filter(|t| t.len() > 0).skip(1);
+    let idx = tokens.next().unwrap().parse::<u64>().unwrap();
+    let val = tokens.next().unwrap().parse::<u64>().unwrap();
     (idx, val)
 }
 
