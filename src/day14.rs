@@ -33,9 +33,9 @@ pub trait Solver {
 }
 
 fn split_mem(line: &str) -> (u64, u64) {
-    let tokens: Vec<_> = line.split(&['[', ']', '=', ' '][..]).collect();
+    let tokens: Vec<_> = line.split(&['[', ']', '=', ' '][..]).filter(|t| t.len() > 0).collect();
     let idx = tokens[1].parse::<u64>().unwrap();
-    let val = tokens[5].parse::<u64>().unwrap();
+    let val = tokens[2].parse::<u64>().unwrap();
     (idx, val)
 }
 
@@ -47,7 +47,9 @@ struct Mask1 {
 
 impl Solver for Mask1 {
     fn update_mask(&mut self, line: &str) {
-        self.replace_from(line);
+        self.on = 0;
+        self.off = 0;
+        skip_mask_str(line).for_each(|c| self.add(c));
     }
 
     fn update_mem(&self, idx: u64, val: u64, mem: &mut BTreeMap<u64, u64>) {
@@ -58,14 +60,8 @@ impl Solver for Mask1 {
 impl Mask1 {
     pub fn from(line: &str) -> Self {
         let mut m = Mask1 { on: 0, off: 0 };
-        m.replace_from(line);
+        m.update_mask(line);
         m
-    }
-
-    pub fn replace_from(&mut self, line: &str) {
-        self.on = 0;
-        self.off = 0;
-        skip_mask_str(line).for_each(|c| self.add(c));
     }
 
     pub fn add(&mut self, c: char) {
@@ -94,7 +90,21 @@ struct Mask2 {
 
 impl Solver for Mask2 {
     fn update_mask(&mut self, line: &str) {
-        self.replace_from(line);
+        self.versions = vec![Mask1::from("")];
+        skip_mask_str(line)
+            .for_each(|c| {
+                match c {
+                    '0' => self.add_to_all('X'),
+                    '1' => self.add_to_all('1'),
+                    'X' => {
+                        let mut copy = self.versions.clone();
+                        add_to_all(&mut copy, '0');
+                        self.add_to_all('1');
+                        self.versions.append(&mut copy);
+                    }
+                    _ => panic!("Error! char '{}' unknown", c)
+                }
+            });
     }
 
     fn update_mem(&self, idx: u64, val: u64, mem: &mut BTreeMap<u64, u64>) {
@@ -111,26 +121,8 @@ fn skip_mask_str(line: &str) -> SkipWhile<Chars, fn(&char)->bool> {
 impl Mask2 {
     pub fn from(line: &str) -> Self {
         let mut mask = Mask2 {versions: Vec::new()};
-        mask.replace_from(line);
+        mask.update_mask(line);
         mask
-    }
-
-    pub fn replace_from(&mut self, line: &str) {
-        self.versions = vec![Mask1::from("")];
-        skip_mask_str(line)
-            .for_each(|c| {
-                match c {
-                    '0' => self.add_to_all('X'),
-                    '1' => self.add_to_all('1'),
-                    'X' => {
-                        let mut copy = self.versions.clone();
-                        add_to_all(&mut copy, '0');
-                        self.add_to_all('1');
-                        self.versions.append(&mut copy);
-                    }
-                    _ => panic!("Error! char '{}' unknown", c)
-                }
-            });
     }
 
     fn add_to_all(&mut self, c: char) {
