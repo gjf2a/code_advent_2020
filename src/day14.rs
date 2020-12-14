@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let lines = all_lines(filename)?.map(|line| line.unwrap());
-    let mut mask = Mask1 {on: 0, off: 0};
+    let mut mask = Mask1::from("");
     let mut mem = BTreeMap::new();
     lines.for_each(|line| {
         if line.starts_with("mask") {
@@ -18,9 +18,9 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(mem_sum.to_string())
 }
 
-fn split_mem(line: &str) -> (usize, u64) {
+fn split_mem(line: &str) -> (u64, u64) {
     let tokens: Vec<_> = line.split(&['[', ']', '=', ' '][..]).collect();
-    let idx = tokens[1].parse::<usize>().unwrap();
+    let idx = tokens[1].parse::<u64>().unwrap();
     let val = tokens[5].parse::<u64>().unwrap();
     (idx, val)
 }
@@ -33,24 +33,67 @@ struct Mask1 {
 
 impl Mask1 {
     pub fn from(line: &str) -> Self {
-        let mut m = Mask1 {on: 0, off: 0};
+        let mut m = Mask1 { on: 0, off: 0 };
         line.chars().skip_while(|c| "mask = ".contains(*c))
-            .for_each(|c| {
-            m.on <<= 1;
-            m.off <<= 1;
-            match c {
-                'X' => {m.off |= 1;},
-                '0' => {},
-                '1' => {m.on |= 1; m.off |= 1;},
-                _ => panic!("Error! char '{}' unknown", c)
-            }
-        });
+            .for_each(|c| m.add(c));
         m
+    }
+
+    pub fn add(&mut self, c: char) {
+        self.on <<= 1;
+        self.off <<= 1;
+        match c {
+            'X' => { self.off |= 1; },
+            '0' => {},
+            '1' => {
+                self.on |= 1;
+                self.off |= 1;
+            },
+            _ => panic!("Error! char '{}' unknown", c)
+        }
     }
 
     pub fn mask(&self, value: u64) -> u64 {
         value & self.off | self.on
     }
+}
+
+#[derive(Debug,Clone,Eq,PartialEq)]
+struct Mask2 {
+    versions: Vec<Mask1>
+}
+
+impl Mask2 {
+    pub fn from(line: &str) -> Self {
+        let mut mask = Mask2 {versions: vec![Mask1::from("")]};
+        line.chars().skip_while(|c| "mask = ".contains(*c))
+            .for_each(|c| {
+                match c {
+                    '0' => mask.add_to_all('X'),
+                    '1' => mask.add_to_all('1'),
+                    'X' => {
+                        let mut copy = mask.versions.clone();
+                        add_to_all(&mut copy, '0');
+                        mask.add_to_all('1');
+                        mask.versions.append(&mut copy);
+                    }
+                    _ => panic!("Error! char '{}' unknown", c)
+                }
+            });
+        mask
+    }
+
+    fn add_to_all(&mut self, c: char) {
+        add_to_all(&mut self.versions, c);
+    }
+
+    pub fn all_variants_of(&self, value: u64) -> Vec<u64> {
+        self.versions.iter().map(|m| m.mask(value)).collect()
+    }
+}
+
+fn add_to_all(masks: &mut Vec<Mask1>, c: char) {
+    masks.iter_mut().for_each(|m| m.add(c));
 }
 
 #[cfg(test)]
@@ -79,5 +122,17 @@ mod tests {
             .iter().for_each(|(num, target)| {
             assert_eq!(make_ones(*num), *target);
         });
+    }
+
+    #[test]
+    fn test_mask_2_1() {
+        for (mask, value, target) in
+            &[("000000000000000000000000000000X1001X", 42, vec![26, 27, 58, 59]),
+              ("00000000000000000000000000000000X0XX", 26, vec![16, 17, 18, 19, 24, 25, 26, 27])] {
+            let mask = Mask2::from(mask);
+            let mut variants = mask.all_variants_of(*value);
+            variants.sort();
+            assert_eq!(variants, *target);
+        }
     }
 }
