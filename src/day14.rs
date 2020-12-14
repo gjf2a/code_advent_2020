@@ -18,6 +18,24 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(mem_sum.to_string())
 }
 
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    let lines = all_lines(filename)?.map(|line| line.unwrap());
+    let mut mask = Mask2::from("");
+    let mut mem = BTreeMap::new();
+    lines.for_each(|line| {
+        if line.starts_with("mask") {
+            mask = Mask2::from(line.as_str());
+        } else {
+            let (idx, val) = split_mem(line.as_str());
+            for option in mask.all_variants_of(idx) {
+                mem.insert(option, val);
+            }
+        }
+    });
+    let mem_sum: u64 = mem.values().sum();
+    Ok(mem_sum.to_string())
+}
+
 fn split_mem(line: &str) -> (u64, u64) {
     let tokens: Vec<_> = line.split(&['[', ']', '=', ' '][..]).collect();
     let idx = tokens[1].parse::<u64>().unwrap();
