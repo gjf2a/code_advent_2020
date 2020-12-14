@@ -1,8 +1,6 @@
 use std::io;
 use advent_code_lib::all_lines;
 use std::collections::BTreeMap;
-use std::iter::SkipWhile;
-use std::str::Chars;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Mask1::from("").solve(filename)
@@ -15,6 +13,11 @@ pub fn solve_2(filename: &str) -> io::Result<String> {
 pub trait Solver {
     fn update_mask(&mut self, line: &str);
     fn update_mem(&self, idx: u64, val: u64, mem: &mut BTreeMap<u64,u64>);
+    fn add(&mut self, c: char);
+
+    fn add_all_from(&mut self, line: &str) {
+        line.chars().skip_while(|c| "mask = ".contains(*c)).for_each(|c| self.add(c));
+    }
 
     fn solve(&mut self, filename: &str) -> io::Result<String> {
         let lines = all_lines(filename)?.map(|line| line.unwrap());
@@ -49,22 +52,14 @@ impl Solver for Mask1 {
     fn update_mask(&mut self, line: &str) {
         self.on = 0;
         self.off = 0;
-        skip_mask_str(line).for_each(|c| self.add(c));
+        self.add_all_from(line);
     }
 
     fn update_mem(&self, idx: u64, val: u64, mem: &mut BTreeMap<u64, u64>) {
         mem.insert(idx, self.mask(val));
     }
-}
 
-impl Mask1 {
-    pub fn from(line: &str) -> Self {
-        let mut m = Mask1 { on: 0, off: 0 };
-        m.update_mask(line);
-        m
-    }
-
-    pub fn add(&mut self, c: char) {
+    fn add(&mut self, c: char) {
         self.on <<= 1;
         self.off <<= 1;
         match c {
@@ -76,6 +71,14 @@ impl Mask1 {
             },
             _ => panic!("Error! char '{}' unknown", c)
         }
+    }
+}
+
+impl Mask1 {
+    pub fn from(line: &str) -> Self {
+        let mut m = Mask1 { on: 0, off: 0 };
+        m.update_mask(line);
+        m
     }
 
     pub fn mask(&self, value: u64) -> u64 {
@@ -91,20 +94,7 @@ struct Mask2 {
 impl Solver for Mask2 {
     fn update_mask(&mut self, line: &str) {
         self.versions = vec![Mask1::from("")];
-        skip_mask_str(line)
-            .for_each(|c| {
-                match c {
-                    '0' => self.add_to_all('X'),
-                    '1' => self.add_to_all('1'),
-                    'X' => {
-                        let mut copy = self.versions.clone();
-                        add_to_all(&mut copy, '0');
-                        self.add_to_all('1');
-                        self.versions.append(&mut copy);
-                    }
-                    _ => panic!("Error! char '{}' unknown", c)
-                }
-            });
+        self.add_all_from(line);
     }
 
     fn update_mem(&self, idx: u64, val: u64, mem: &mut BTreeMap<u64, u64>) {
@@ -112,10 +102,20 @@ impl Solver for Mask2 {
             mem.insert(option, val);
         }
     }
-}
 
-fn skip_mask_str(line: &str) -> SkipWhile<Chars, fn(&char)->bool> {
-    line.chars().skip_while(|c| "mask = ".contains(*c))
+    fn add(&mut self, c: char) {
+        match c {
+            '0' => add_to_all(&mut self.versions, 'X'),
+            '1' => add_to_all(&mut self.versions, '1'),
+            'X' => {
+                let mut copy = self.versions.clone();
+                add_to_all(&mut copy, '0');
+                add_to_all(&mut self.versions,'1');
+                self.versions.append(&mut copy);
+            }
+            _ => panic!("Error! char '{}' unknown", c)
+        }
+    }
 }
 
 impl Mask2 {
@@ -123,10 +123,6 @@ impl Mask2 {
         let mut mask = Mask2 {versions: Vec::new()};
         mask.update_mask(line);
         mask
-    }
-
-    fn add_to_all(&mut self, c: char) {
-        add_to_all(&mut self.versions, c);
     }
 
     pub fn all_variants_of(&self, value: u64) -> Vec<u64> {
