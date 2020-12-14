@@ -53,8 +53,44 @@ fn earliest_timestamp_for(bus_offsets: &[(usize,usize)]) -> usize {
     timestamp - *max_offset
 }
 
+fn earliest_timestamp_brute_force(bus_offsets: &[(usize, usize)]) -> usize {
+    let interval = bus_offsets[0].0;
+    let mut timestamp = interval;
+    while !timestamp_works(timestamp, bus_offsets) {timestamp += interval;}
+    timestamp
+}
+
+fn earliest_pair_timestamp(bus1: usize, bus2: usize, interval: usize) -> usize {
+    let mut timestamp = bus1;
+    while !timestamp_works(timestamp, &[(bus1,0), (bus2,1)]) {timestamp += bus1;}
+    timestamp * interval
+}
+
+fn earliest_pair_timestamps(bus_offsets: &[(usize, usize)]) -> Vec<usize> {
+    let mut iter = bus_offsets.iter();
+    let base_bus = iter.next().unwrap().0;
+    iter.map(|(bus, offset)| earliest_pair_timestamp(base_bus, *bus, *offset))
+        .collect()
+}
+
 fn timestamp_works(timestamp: usize, bus_offsets: &[(usize,usize)]) -> bool {
     bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset) % *bus == 0)
+}
+
+fn gcd(a: usize, b: usize) -> usize {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+
+fn lcm(a: usize, b: usize) -> usize {
+    (a * b) / gcd(a, b)
+}
+
+fn lcm_from(nums: &[usize]) -> usize {
+    nums.iter().fold(1, |acc, x| lcm(acc, *x))
 }
 
 #[cfg(test)]
@@ -111,5 +147,24 @@ mod tests {
     #[test]
     fn test_2_3() {
         test_line("1789,37,47,1889", 1202161486);
+    }
+
+    #[test]
+    fn idea() {
+        for line in &["17,x,13,19", "67,7,59,61", "67,x,7,59,61", "67,7,x,59,61", "1789,37,47,1889"] {
+            let nums = puzzle_2_line(line);
+            let pair_times = earliest_pair_timestamps(&nums);
+            let pair_steps: Vec<usize> = pair_times.iter().map(|n| n / nums[0].0).collect();
+            let brute = earliest_timestamp_for(&nums);
+            println!("{}: pair times: {:?}: pair steps: {:?}, lcm: {} brute force: {} ({})", line, pair_times, pair_steps, lcm_from(&pair_times), brute, brute / nums[0].0);
+        }
+    }
+
+    #[test]
+    fn idea2() {
+        for i in 1..202 {
+            let start = i * 17;
+
+        }
     }
 }
