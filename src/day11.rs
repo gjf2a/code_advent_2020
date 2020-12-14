@@ -1,57 +1,54 @@
 use std::{io, mem};
 use advent_code_lib::{all_lines, DirIter, Dir, Position};
 use std::fmt::{Display, Formatter, Error};
-use Rule::*;
 
 const OCCUPIED: char = '#';
 const FLOOR: char = '.';
 const EMPTY: char = 'L';
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    Ok(GameOfSeats::num_occupied_at_stable(filename, Puzzle1)?.to_string())
+    Ok(GameOfSeats::num_occupied_at_stable(filename, TOO_MANY_1, project_puzzle_1)?.to_string())
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    Ok(GameOfSeats::num_occupied_at_stable(filename, Puzzle2)?.to_string())
+    Ok(GameOfSeats::num_occupied_at_stable(filename, TOO_MANY_2, project_puzzle_2)?.to_string())
 }
 
-#[derive(Debug,Clone,Copy,Eq,PartialEq)]
-pub enum Rule {
-    Puzzle1, Puzzle2
+const TOO_MANY_1: usize = 4;
+pub fn project_puzzle_1(_: &GameOfSeats, d: Dir, p: Position) -> Position {
+    p.updated(d)
 }
 
-impl Rule {
-    pub fn too_many_people(&self, num_people: usize) -> bool {
-        num_people >= match self { Puzzle1 => 4, Puzzle2 => 5}
-    }
-
-    pub fn seat_occupied_in(&self, gos: &GameOfSeats, d: Dir, p: Position) -> bool {
-        self.projected_seat(gos, d, p) == OCCUPIED
-    }
-
-    pub fn projected_seat(&self, gos: &GameOfSeats, d: Dir, p: Position) -> char {
-        gos.seat(match self {
-            Puzzle1 => p.updated(d),
-            Puzzle2 => Rule::puzzle2projection(gos, d, p)
-        })
-    }
-
-    pub fn puzzle2projection(gos: &GameOfSeats, d: Dir, p: Position) -> Position {
-        let mut p = p;
-        loop {
-            p.update(d);
-            if !gos.within_outer_ring(p) || gos.seat(p) != FLOOR {
-                return p;
-            }
+const TOO_MANY_2: usize = 5;
+pub fn project_puzzle_2(gos: &GameOfSeats, d: Dir, p: Position) -> Position {
+    let mut p = p;
+    loop {
+        p.update(d);
+        if !gos.within_outer_ring(p) || gos.seat(p) != FLOOR {
+            return p;
         }
     }
 }
 
-#[derive(Clone,Debug,Eq,PartialEq)]
 pub struct GameOfSeats {
     seating: Vec<Vec<char>>,
-    rule: Rule
+    too_many_adj: usize,
+    projection_fn: fn(&GameOfSeats, Dir, Position) -> Position
 }
+
+impl Clone for GameOfSeats {
+    fn clone(&self) -> Self {
+        GameOfSeats {seating: self.seating.clone(), too_many_adj: self.too_many_adj, projection_fn: self.projection_fn}
+    }
+}
+
+impl PartialEq for GameOfSeats {
+    fn eq(&self, other: &Self) -> bool {
+        self.seating == other.seating && self.too_many_adj == other.too_many_adj
+    }
+}
+
+impl Eq for GameOfSeats {}
 
 impl Display for GameOfSeats {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
@@ -62,16 +59,18 @@ impl Display for GameOfSeats {
 }
 
 impl GameOfSeats {
-    pub fn from(filename: &str, rule: Rule) -> io::Result<Self> {
+    pub fn from(filename: &str, too_many_adj: usize, projection_fn: fn(&GameOfSeats, Dir, Position) -> Position) -> io::Result<Self> {
         Ok(GameOfSeats {
             seating: all_lines(filename)?
                 .map(|line| line.unwrap().chars().collect())
                 .collect(),
-            rule})
+            too_many_adj,
+            projection_fn
+        })
     }
 
-    pub fn num_occupied_at_stable(filename: &str, rule: Rule) -> io::Result<usize> {
-        Ok(GameOfSeats::from(filename, rule)?.stable_state().num_occupied())
+    pub fn num_occupied_at_stable(filename: &str, max_adj: usize, projection_fn: fn(&GameOfSeats, Dir, Position) -> Position) -> io::Result<usize> {
+        Ok(GameOfSeats::from(filename, max_adj, projection_fn)?.stable_state().num_occupied())
     }
 
     pub fn height(&self) -> usize {self.seating.len()}
@@ -100,7 +99,7 @@ impl GameOfSeats {
     pub fn num_adj_occupied(&self, p: Position) -> Option<usize> {
         if self.in_bounds(p) {
             Some(DirIter::new()
-                .filter(|d| self.rule.seat_occupied_in(self, *d, p))
+                .filter(|d| self.seat((self.projection_fn)(&self, *d, p)) == OCCUPIED)
                 .count())
         } else {
             None
@@ -118,7 +117,8 @@ impl GameOfSeats {
                     .map(|col| self.iterated_seat_at(Position {col: col as isize, row: row as isize}))
                     .collect())
                 .collect(),
-            rule: self.rule
+            too_many_adj: self.too_many_adj,
+            projection_fn: self.projection_fn
         }
     }
 
@@ -126,7 +126,7 @@ impl GameOfSeats {
         let seat = self.seat(p);
         let adj = self.num_adj_occupied(p).unwrap();
         if seat == EMPTY && adj == 0 {OCCUPIED}
-        else if seat == OCCUPIED && self.rule.too_many_people(adj) {EMPTY}
+        else if seat == OCCUPIED && adj >= self.too_many_adj {EMPTY}
         else { seat }
     }
 
@@ -143,6 +143,7 @@ impl GameOfSeats {
     }
 }
 
+#[derive(Clone)]
 pub struct GameOfSeatsIterator {
     gos: Option<GameOfSeats>
 }
@@ -173,22 +174,22 @@ mod tests {
 
     #[test]
     fn test_create() {
-        let start = GameOfSeats::from("in/day11_ex1.txt", Puzzle1).unwrap();
+        let start = GameOfSeats::from("in/day11_ex1.txt", TOO_MANY_1, project_puzzle_1).unwrap();
         assert_eq!(start.to_string(), EXPECTED_1[0]);
     }
 
     #[test]
     fn test_example_1() -> io::Result<()> {
-        test_example(Puzzle1, &EXPECTED_1)
+        test_example(TOO_MANY_1, project_puzzle_1, &EXPECTED_1)
     }
 
     #[test]
     fn test_example_2() -> io::Result<()> {
-        test_example(Puzzle2, &EXPECTED_2)
+        test_example(TOO_MANY_2, project_puzzle_2, &EXPECTED_2)
     }
 
-    fn test_example(rule: Rule, targets: &[&str]) -> io::Result<()> {
-        let start = GameOfSeats::from("in/day11_ex1.txt", rule)?;
+    fn test_example(too_many_adj: usize, projection_fn: fn(&GameOfSeats, Dir, Position) -> Position, targets: &[&str]) -> io::Result<()> {
+        let start = GameOfSeats::from("in/day11_ex1.txt", too_many_adj, projection_fn)?;
         let mut iter = start.iter();
         for i in 0..targets.len() {
             println!("Testing target {}", i);
@@ -206,23 +207,6 @@ mod tests {
     #[test]
     fn test_solve_2() {
         assert_eq!(solve_2("in/day11_ex1.txt").unwrap(), "26");
-    }
-
-    #[test]
-    fn test_solve_2_corners() {
-        let mut gos = GameOfSeats::from("in/day11_ex1.txt", Puzzle2).unwrap();
-        let c = Position {row: 0, col: 0};
-        assert_eq!(Puzzle2.projected_seat(&gos, Dir::N, c), FLOOR);
-        assert_eq!(gos.num_adj_occupied(c).unwrap(), 0);
-        assert_eq!(gos.iterated_seat_at(c), OCCUPIED);
-        gos = gos.create_next();
-        assert_eq!(Puzzle2.projected_seat(&gos, Dir::N, c), FLOOR);
-        assert_eq!(gos.num_adj_occupied(c).unwrap(), 3);
-        assert_eq!(gos.iterated_seat_at(c), OCCUPIED);
-        gos = gos.create_next();
-        assert_eq!(Puzzle2.projected_seat(&gos, Dir::N, c), FLOOR);
-        assert_eq!(gos.num_adj_occupied(c).unwrap(), 1);
-        assert_eq!(gos.seat(c), OCCUPIED);
     }
 
     const EXPECTED_1: [&'static str; 6] = [
