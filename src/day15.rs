@@ -12,12 +12,12 @@ pub fn elf_1(starting_nums: &[usize], nth: usize) -> usize {
     let mut num2last = HashMap::new();
     let mut spoken = 0;
     for i in 0..nth {
-        if i < starting_nums.len() {
-            spoken = starting_nums[i];
+        spoken = if i < starting_nums.len() {
+            starting_nums[i]
         } else {
             let (turn, prev) = num2last.get(&spoken).unwrap();
-            spoken = turn - prev;
-        }
+            turn - prev
+        };
         if let Some(entry) = num2last.get_mut(&spoken) {
             *entry = (i, entry.0);
         } else {

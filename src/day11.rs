@@ -183,23 +183,28 @@ pub struct GameOfSeatsIterator<T> {
     gos: Option<T>
 }
 
+impl <T:GameOfSeatsPuzzle+Eq> GameOfSeatsIterator<T> {
+    fn update_next(&mut self, candidate: T) -> Option<<GameOfSeatsIterator<T> as Iterator>::Item> {
+        let mut next = Some(candidate);
+        if next == self.gos {
+            self.gos = None;
+        } else {
+            mem::swap(&mut next, &mut self.gos);
+        }
+        next
+    }
+}
+
 impl <T:GameOfSeatsPuzzle+Eq> Iterator for GameOfSeatsIterator<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.gos != None {
-            let gos = self.gos.as_ref().unwrap();
-            let next = gos.create_next();
-            if next == *gos {
-                self.gos = None;
-                return Some(next);
-            } else {
-                let mut result = Some(next);
-                mem::swap(&mut result, &mut self.gos);
-                return result;
-            }
+        if let Some(gos) = &self.gos {
+            let candidate = gos.create_next();
+            self.update_next(candidate)
+        } else {
+            None
         }
-        None
     }
 }
 
