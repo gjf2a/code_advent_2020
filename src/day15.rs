@@ -14,27 +14,14 @@ pub fn elf_1(starting_nums: &[usize], nth: usize) -> usize {
     for i in 0..nth {
         if i < starting_nums.len() {
             spoken = starting_nums[i];
-            num2last.insert(spoken, (i, i));
         } else {
             let (turn, prev) = num2last.get(&spoken).unwrap();
             spoken = turn - prev;
-            if let Some(entry) = num2last.get_mut(&spoken) {
-                *entry = (i, entry.0);
-            } else {
-                num2last.insert(spoken, (i, i));
-            }
         }
-        if i % 1000000 == 0 {
-            print!("$");
-        }
-        else if i % 100000 == 0 {
-            print!("*");
-        }
-        else if i % 10000 == 0 {
-            print!("!");
-        }
-        else if i % 1000 == 0 {
-            print!(".");
+        if let Some(entry) = num2last.get_mut(&spoken) {
+            *entry = (i, entry.0);
+        } else {
+            num2last.insert(spoken, (i, i));
         }
     }
     spoken
@@ -58,21 +45,6 @@ mod tests {
             ([3,1,2], 1836)
         ].iter() {
             assert_eq!(elf_1(nums, 2020), *target);
-        }
-    }
-
-    #[test]
-    fn test_2() {
-        for (nums, target) in [
-            ([0,3,6], 175594),
-            ([1,3,2], 2578),
-            ([2,1,3], 3544142),
-            ([1,2,3], 261214),
-            ([2,3,1], 6895259),
-            ([3,2,1], 18),
-            ([3,1,2], 362)
-        ].iter() {
-            assert_eq!(elf_1(nums, 30000000), *target);
         }
     }
 }
