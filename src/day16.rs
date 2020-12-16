@@ -163,7 +163,7 @@ fn parse_field_line(line: &str) -> (String,((usize,usize),(usize,usize))) {
     let field_name = parts_colon.next().unwrap().to_string();
     let ns: Vec<_> = parts_colon.next().unwrap().split(&[' ', '-', 'o','r'][..])
         .filter(|s| s.len() > 0)
-        .map(|s| s.parse::<usize>().unwrap())
+        .map(|s| s.parse().unwrap())
         .collect();
     (field_name, ((ns[0], ns[1]), (ns[2], ns[3])))
 }
