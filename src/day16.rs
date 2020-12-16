@@ -37,6 +37,10 @@ impl Constraints {
     pub fn some_field_accepts(&self, value: usize) -> bool {
         self.names().any(|key| self.matches_range_for(key.as_str(), value))
     }
+
+    pub fn accepts_ticket(&self, ticket: &Vec<usize>) ->  bool {
+        ticket.iter().all(|v| self.some_field_accepts(*v))
+    }
 }
 
 #[derive(Debug,Clone,Eq,PartialEq)]
@@ -48,6 +52,14 @@ struct Notes {
 
 impl Notes {
     pub fn from_keep_all(filename: &str) -> io::Result<Self> {
+        Notes::from(filename, true)
+    }
+
+    pub fn from_keep_valid(filename: &str) -> io::Result<Self> {
+        Notes::from(filename, false)
+    }
+
+    fn from(filename: &str, allow_invalid: bool) -> io::Result<Self> {
         let mut lines = all_lines(filename)?;
         let fields = Constraints::from(&mut lines.by_ref());
         let my_ticket = parse_ticket_line(lines.by_ref()
@@ -56,25 +68,13 @@ impl Notes {
         let nearby_tickets = lines
             .skip_while(|line| line.len() == 0 || line == "nearby tickets:")
             .map(|line| parse_ticket_line(line.as_str()))
+            .filter(|t| allow_invalid || fields.accepts_ticket(t))
             .collect();
         Ok(Notes {fields, my_ticket, nearby_tickets})
     }
 
-    pub fn from_keep_valid(filename: &str) -> io::Result<Self> {
-        let mut result = Notes::from_keep_all(filename)?;
-        result.nearby_tickets = result.nearby_tickets.iter()
-            .filter(|t| result.accepts_ticket(t))
-            .map(|t| t.clone())
-            .collect();
-        Ok(result)
-    }
-
     pub fn matches_range_for(&self, field: &str, value: usize) -> bool {
         self.fields.matches_range_for(field, value)
-    }
-
-    pub fn accepts_ticket(&self, ticket: &Vec<usize>) ->  bool {
-        ticket.iter().all(|v| self.fields.some_field_accepts(*v))
     }
 
     pub fn invalid_values_for(&self, ticket: &Vec<usize>) -> Vec<usize> {
