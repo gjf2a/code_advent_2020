@@ -27,11 +27,8 @@ impl Constraints {
     }
 
     pub fn matches_range_for(&self, field: &str, value: usize) -> bool {
-        match self.fields.get(field) {
-            Some(((min1, max1), (min2, max2))) =>
-                *min1 <= value && value <= *max1 || *min2 <= value && value <= *max2,
-            None => false
-        }
+        let ((min1, max1), (min2, max2)) = self.fields.get(field).unwrap();
+        *min1 <= value && value <= *max1 || *min2 <= value && value <= *max2
     }
 
     pub fn some_field_accepts(&self, value: usize) -> bool {
