@@ -7,11 +7,7 @@ pub fn solve_1() -> io::Result<String> {
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    Ok(Notes::from_keep_all(filename)?.my_field_values().iter()
-        .filter(|(k,_)| k.starts_with("departure"))
-        .map(|(_,v)| v)
-        .product::<usize>()
-        .to_string())
+    Ok(Notes::from_keep_valid(filename)?.my_departures().values().product::<usize>().to_string())
 }
 
 #[derive(Debug,Clone,Eq,PartialEq)]
@@ -72,20 +68,7 @@ impl Notes {
     }
 
     pub fn potential_positions(&self) -> BTreeMap<String,BTreeSet<usize>> {
-        let mut result = BTreeMap::new();
-        for ticket in self.nearby_tickets.iter() {
-            for p in 0..ticket.len() {
-                for field in self.fields.keys() {
-                    if self.matches_range_for(field.as_str(), ticket[p]) {
-                        match result.get_mut(field.as_str()) {
-                            None => {result.insert(field.clone(), btreeset! {p});}
-                            Some(tix) => {tix.insert(p);}
-                        }
-                    }
-                }
-            }
-        }
-        result
+        self.fields.keys().map(|k| (k.clone(), (0..self.my_ticket.len()).collect())).collect()
     }
 
     pub fn my_field_values(&self) -> BTreeMap<String,usize> {
@@ -100,27 +83,53 @@ impl Notes {
     }
 
     pub fn field_positions(&self) -> BTreeMap<String,usize> {
-        let mut potential = self.potential_positions();
-        println!("pre potential: {:?}", potential);
-        for ticket in self.nearby_tickets.iter() {
-            for (field, positions) in potential.iter_mut() {
-                for p in 0..ticket.len() {
-                    if !self.matches_range_for(field.as_str(), ticket[p]) {
-                        positions.remove(&p);
-                    }
-                }
-            }
-        }
-        println!("post potential: {:?}", potential);
-        potential.iter()
-            .map(|(k,v)| (k.clone(), *(v.iter().next().unwrap())))
-            .collect()
+        PotentialMatches::get_matches_from(self)
     }
 
     pub fn nearby_ticket_scanning_error_rate(&self) -> usize {
         self.nearby_tickets.iter()
             .map(|t| self.invalid_values_for(t).iter().sum::<usize>())
             .sum()
+    }
+}
+
+#[derive(Debug,Clone)]
+struct PotentialMatches {
+    candidates: BTreeMap<String,BTreeSet<usize>>,
+    matches: BTreeMap<String,usize>
+}
+
+impl PotentialMatches {
+    fn get_matches_from(notes: &Notes) -> BTreeMap<String,usize> {
+        let mut potential = PotentialMatches { candidates: notes.potential_positions(), matches: BTreeMap::new()};
+        potential.remove_impossible(notes);
+        while potential.candidates.len() > 0 {
+            potential.assign_most_constrained()
+        }
+        potential.matches
+    }
+
+    fn remove_impossible(&mut self, notes: &Notes) {
+        for ticket in notes.nearby_tickets.iter() {
+            for (field, positions) in self.candidates.iter_mut() {
+                for p in 0..ticket.len() {
+                    if !notes.matches_range_for(field.as_str(), ticket[p]) {
+                        positions.remove(&p);
+                    }
+                }
+            }
+        }
+    }
+
+    fn assign_most_constrained(&mut self) {
+        let (_, next, position) = self.candidates.iter()
+            .map(|(k,v)| (v.len(), k.clone(), *v.iter().next().unwrap()))
+            .min().unwrap();
+        self.candidates.remove(next.as_str());
+        self.matches.insert(next, position);
+        for candidate in self.candidates.values_mut() {
+            candidate.remove(&position);
+        }
     }
 }
 
