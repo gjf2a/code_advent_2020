@@ -11,8 +11,37 @@ pub fn solve_2(filename: &str) -> io::Result<String> {
 }
 
 #[derive(Debug,Clone,Eq,PartialEq)]
+struct Constraints {
+    fields: BTreeMap<String,((usize,usize),(usize,usize))>
+}
+
+impl Constraints {
+    pub fn from(lines: &mut impl Iterator<Item=String>) -> Self {
+        Constraints {fields: lines.take_while(|line| line.len() > 0)
+            .map(|line| parse_field_line(line.as_str()))
+            .collect()}
+    }
+
+    pub fn names(&self) -> impl Iterator<Item=&String> {
+        self.fields.keys()
+    }
+
+    pub fn matches_range_for(&self, field: &str, value: usize) -> bool {
+        match self.fields.get(field) {
+            Some(((min1, max1), (min2, max2))) =>
+                *min1 <= value && value <= *max1 || *min2 <= value && value <= *max2,
+            None => false
+        }
+    }
+
+    pub fn some_field_accepts(&self, value: usize) -> bool {
+        self.names().any(|key| self.matches_range_for(key.as_str(), value))
+    }
+}
+
+#[derive(Debug,Clone,Eq,PartialEq)]
 struct Notes {
-    fields: BTreeMap<String,((usize,usize),(usize,usize))>,
+    fields: Constraints,
     my_ticket: Vec<usize>,
     nearby_tickets: Vec<Vec<usize>>
 }
@@ -20,10 +49,7 @@ struct Notes {
 impl Notes {
     pub fn from_keep_all(filename: &str) -> io::Result<Self> {
         let mut lines = all_lines(filename)?;
-        let fields: BTreeMap<String,((usize,usize),(usize,usize))> = lines.by_ref()
-            .take_while(|line| line.len() > 0)
-            .map(|line| parse_field_line(line.as_str()))
-            .collect();
+        let fields = Constraints::from(&mut lines.by_ref());
         let my_ticket = parse_ticket_line(lines.by_ref()
             .skip_while(|line| line.len() == 0 || line == "your ticket:")
             .next().unwrap().as_str());
@@ -43,32 +69,23 @@ impl Notes {
         Ok(result)
     }
 
-    pub fn accepts_ticket(&self, ticket: &Vec<usize>) ->  bool {
-        ticket.iter().all(|v| self.some_field_accepts(*v))
-    }
-
-    pub fn some_field_accepts(&self, value: usize) -> bool {
-        self.fields.keys()
-            .any(|key| self.matches_range_for(key.as_str(), value))
-    }
-
     pub fn matches_range_for(&self, field: &str, value: usize) -> bool {
-        match self.fields.get(field) {
-            Some(((min1, max1), (min2, max2))) =>
-                *min1 <= value && value <= *max1 || *min2 <= value && value <= *max2,
-            None => false
-        }
+        self.fields.matches_range_for(field, value)
+    }
+
+    pub fn accepts_ticket(&self, ticket: &Vec<usize>) ->  bool {
+        ticket.iter().all(|v| self.fields.some_field_accepts(*v))
     }
 
     pub fn invalid_values_for(&self, ticket: &Vec<usize>) -> Vec<usize> {
         ticket.iter()
             .map(|n| *n)
-            .filter(|value| !self.some_field_accepts(*value))
+            .filter(|value| !self.fields.some_field_accepts(*value))
             .collect()
     }
 
     pub fn potential_positions(&self) -> BTreeMap<String,BTreeSet<usize>> {
-        self.fields.keys().map(|k| (k.clone(), (0..self.num_positions()).collect())).collect()
+        self.fields.names().map(|k| (k.clone(), (0..self.num_positions()).collect())).collect()
     }
 
     pub fn my_field_values(&self) -> BTreeMap<String,usize> {
