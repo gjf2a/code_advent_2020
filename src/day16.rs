@@ -68,7 +68,7 @@ impl Notes {
     }
 
     pub fn potential_positions(&self) -> BTreeMap<String,BTreeSet<usize>> {
-        self.fields.keys().map(|k| (k.clone(), (0..self.my_ticket.len()).collect())).collect()
+        self.fields.keys().map(|k| (k.clone(), (0..self.num_positions()).collect())).collect()
     }
 
     pub fn my_field_values(&self) -> BTreeMap<String,usize> {
@@ -80,6 +80,10 @@ impl Notes {
             .filter(|(k,_)| k.starts_with("departure"))
             .map(|(k,v)| (k.clone(), *v))
             .collect()
+    }
+
+    pub fn num_positions(&self) -> usize {
+        self.my_ticket.len()
     }
 
     pub fn field_positions(&self) -> BTreeMap<String,usize> {
@@ -188,14 +192,12 @@ mod tests {
     fn test_valid_field_positions() {
         let notes = Notes::from_keep_valid("in/day16.txt").unwrap();
         let unique_positions: BTreeSet<usize> = notes.field_positions().iter().map(|p| *p.1).collect();
-        assert_eq!(unique_positions.len(), 20);
+        assert_eq!(unique_positions.len(), notes.num_positions());
     }
 
     #[test]
     fn test_departures() {
         let notes = Notes::from_keep_valid("in/day16.txt").unwrap();
-        println!("{:?}", notes.field_positions());
-        println!("{:?}", notes.my_field_values());
-        println!("{:?}", notes.my_departures());
+        assert_eq!(format!("{:?}", notes.my_departures()), r#"{"departure date": 101, "departure location": 53, "departure platform": 89, "departure station": 61, "departure time": 113, "departure track": 73}"#)
     }
 }
