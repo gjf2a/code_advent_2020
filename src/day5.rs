@@ -1,13 +1,10 @@
 use std::io;
 use advent_code_lib::all_lines;
-use std::io::{BufReader, Lines};
-use std::fs::File;
-use std::iter::Map;
 use std::fmt::Display;
 
-fn seat_ids() -> io::Result<Map<Lines<BufReader<File>>, fn(io::Result<String>) -> usize>> {
+fn seat_ids() -> io::Result<impl Iterator<Item=usize>> {
     Ok(all_lines("in/day5.txt")?
-        .map(|line| BoardingPass::from(line.unwrap().as_str()).seat_id()))
+        .map(|line| BoardingPass::from(line.as_str()).seat_id()))
 }
 
 pub fn solve_1() -> io::Result<String> {

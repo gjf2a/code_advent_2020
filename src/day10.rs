@@ -14,7 +14,7 @@ pub fn solve_2(filename: &str) -> io::Result<String> {
 fn make_joltage_vec(filename: &str) -> io::Result<Vec<usize>> {
     let mut nums = vec![0];
     all_lines(filename)?
-        .map(|line| line.unwrap().parse::<usize>().unwrap())
+        .map(|line| line.parse::<usize>().unwrap())
         .for_each(|joltage| nums.push(joltage));
     nums.sort();
     nums.push(nums.last().unwrap() + 3);

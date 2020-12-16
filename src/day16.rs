@@ -3,7 +3,15 @@ use std::io;
 use advent_code_lib::all_lines;
 
 pub fn solve_1() -> io::Result<String> {
-    Ok(Notes::from("in/day16.txt")?.nearby_ticket_scanning_error_rate().to_string())
+    Ok(Notes::from_keep_all("in/day16.txt")?.nearby_ticket_scanning_error_rate().to_string())
+}
+
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    Ok(Notes::from_keep_all(filename)?.my_field_values().iter()
+        .filter(|(k,_)| k.starts_with("departure"))
+        .map(|(_,v)| v)
+        .product::<usize>()
+        .to_string())
 }
 
 #[derive(Debug,Clone,Eq,PartialEq)]
@@ -14,8 +22,8 @@ struct Notes {
 }
 
 impl Notes {
-    pub fn from(filename: &str) -> io::Result<Self> {
-        let mut lines = all_lines(filename)?.map(|s| s.unwrap());
+    pub fn from_keep_all(filename: &str) -> io::Result<Self> {
+        let mut lines = all_lines(filename)?;
         let fields: BTreeMap<String,((usize,usize),(usize,usize))> = lines.by_ref()
             .take_while(|line| line.len() > 0)
             .map(|line| parse_field_line(line.as_str()))
@@ -30,11 +38,13 @@ impl Notes {
         Ok(Notes {fields, my_ticket, nearby_tickets})
     }
 
-    pub fn keep_only_valid_tickets(&mut self) {
-        self.nearby_tickets = self.nearby_tickets.iter()
-            .filter(|t| self.accepts_ticket(*t))
+    pub fn from_keep_valid(filename: &str) -> io::Result<Self> {
+        let mut result = Notes::from_keep_all(filename)?;
+        result.nearby_tickets = result.nearby_tickets.iter()
+            .filter(|t| result.accepts_ticket(t))
             .map(|t| t.clone())
             .collect();
+        Ok(result)
     }
 
     pub fn matches_range_for(&self, field: &str, value: usize) -> bool {
@@ -61,29 +71,49 @@ impl Notes {
             .collect()
     }
 
-    pub fn num_positions(&self) -> usize {
-        self.my_ticket.len()
+    pub fn potential_positions(&self) -> BTreeMap<String,BTreeSet<usize>> {
+        let mut result = BTreeMap::new();
+        for ticket in self.nearby_tickets.iter() {
+            for p in 0..ticket.len() {
+                for field in self.fields.keys() {
+                    if self.matches_range_for(field.as_str(), ticket[p]) {
+                        match result.get_mut(field.as_str()) {
+                            None => {result.insert(field.clone(), btreeset! {p});}
+                            Some(tix) => {tix.insert(p);}
+                        }
+                    }
+                }
+            }
+        }
+        result
     }
 
-    pub fn potential_positions(&self) -> Vec<PotentialPositions> {
-        self.fields.keys()
-            .map(|field| PotentialPositions {field: field.clone(), potential: (0..self.num_positions()).collect()})
+    pub fn my_field_values(&self) -> BTreeMap<String,usize> {
+        self.field_positions().iter().map(|(k,v)| (k.clone(), self.my_ticket[*v])).collect()
+    }
+
+    pub fn my_departures(&self) -> BTreeMap<String,usize> {
+        self.my_field_values().iter()
+            .filter(|(k,_)| k.starts_with("departure"))
+            .map(|(k,v)| (k.clone(), *v))
             .collect()
     }
 
     pub fn field_positions(&self) -> BTreeMap<String,usize> {
         let mut potential = self.potential_positions();
+        println!("pre potential: {:?}", potential);
         for ticket in self.nearby_tickets.iter() {
-            for field in potential.iter_mut() {
+            for (field, positions) in potential.iter_mut() {
                 for p in 0..ticket.len() {
-                    if !self.matches_range_for(field.field.as_str(), ticket[p]) {
-                        field.potential.remove(&p);
+                    if !self.matches_range_for(field.as_str(), ticket[p]) {
+                        positions.remove(&p);
                     }
                 }
             }
         }
+        println!("post potential: {:?}", potential);
         potential.iter()
-            .map(|p| (p.field.clone(), *(p.potential.iter().next().unwrap())))
+            .map(|(k,v)| (k.clone(), *(v.iter().next().unwrap())))
             .collect()
     }
 
@@ -93,14 +123,6 @@ impl Notes {
             .sum()
     }
 }
-
-#[derive(Clone,Debug,Eq,PartialEq)]
-struct PotentialPositions {
-    field: String,
-    potential: BTreeSet<usize>
-}
-
-
 
 fn parse_field_line(line: &str) -> (String,((usize,usize),(usize,usize))) {
     let mut parts_colon = line.split(':');
@@ -122,13 +144,13 @@ mod tests {
 
     #[test]
     fn test_ex_1() {
-        let notes = Notes::from("in/day16_ex1.txt").unwrap();
+        let notes = Notes::from_keep_all("in/day16_ex1.txt").unwrap();
         assert_eq!(notes.nearby_ticket_scanning_error_rate(), 71);
     }
 
     #[test]
     fn test_matches() {
-        let notes = Notes::from("in/day16_ex1.txt").unwrap();
+        let notes = Notes::from_keep_all("in/day16_ex1.txt").unwrap();
         [(1,true), (2,true), (3,true), (4,false), (5,true), (7,true), (8,false)].iter()
             .for_each(|(v,tf)| {
                 assert_eq!(notes.matches_range_for("class", *v), *tf);
@@ -137,15 +159,34 @@ mod tests {
 
     #[test]
     fn test_invalid_values() {
-        let notes = Notes::from("in/day16_ex1.txt").unwrap();
+        let notes = Notes::from_keep_all("in/day16_ex1.txt").unwrap();
         assert_eq!(notes.invalid_values_for(&vec![40,4,50]), vec![4]);
     }
 
     #[test]
     fn test_field_positions() {
-        let mut notes = Notes::from("in/day16_ex2.txt").unwrap();
-        notes.keep_only_valid_tickets();
+        let notes = Notes::from_keep_all("in/day16_ex2.txt").unwrap();
         assert_eq!(notes.field_positions(), btreemap! {"class".to_string() => 1, "row".to_string() => 0, "seat".to_string() => 2});
     }
 
+    #[test]
+    fn test_my_fields() {
+        let notes = Notes::from_keep_all("in/day16_ex2.txt").unwrap();
+        assert_eq!(notes.my_field_values(), btreemap! {"class".to_string() => 12, "row".to_string() => 11, "seat".to_string() => 13});
+    }
+
+    #[test]
+    fn test_valid_field_positions() {
+        let notes = Notes::from_keep_valid("in/day16.txt").unwrap();
+        let unique_positions: BTreeSet<usize> = notes.field_positions().iter().map(|p| *p.1).collect();
+        assert_eq!(unique_positions.len(), 20);
+    }
+
+    #[test]
+    fn test_departures() {
+        let notes = Notes::from_keep_valid("in/day16.txt").unwrap();
+        println!("{:?}", notes.field_positions());
+        println!("{:?}", notes.my_field_values());
+        println!("{:?}", notes.my_departures());
+    }
 }

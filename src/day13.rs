@@ -9,8 +9,8 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
 
 fn puzzle_1_inputs(filename: &str) -> io::Result<(usize, Vec<usize>)> {
     let mut lines = all_lines(filename)?;
-    let earliest_departure = lines.next().unwrap()?.parse::<usize>().unwrap();
-    let busses = lines.next().unwrap()?.split(',')
+    let earliest_departure = lines.next().unwrap().parse::<usize>().unwrap();
+    let busses = lines.next().unwrap().split(',')
         .filter(|n| *n != "x")
         .map(|n| n.parse::<usize>().unwrap())
         .collect();
@@ -29,7 +29,7 @@ fn bus_departure(bus: usize, earliest_departure: usize) -> usize {
 }
 
 fn puzzle_2_inputs(filename: &str) -> io::Result<Vec<(usize,usize)>> {
-    let line_2 = all_lines(filename)?.skip(1).next().unwrap()?;
+    let line_2 = all_lines(filename)?.skip(1).next().unwrap();
     Ok(puzzle_2_line(line_2.as_str()))
 }
 

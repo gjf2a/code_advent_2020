@@ -20,9 +20,8 @@ pub trait Solver {
     }
 
     fn solve(&mut self, filename: &str) -> io::Result<String> {
-        let lines = all_lines(filename)?.map(|line| line.unwrap());
         let mut mem = BTreeMap::new();
-        lines.for_each(|line| {
+        all_lines(filename)?.for_each(|line| {
             if line.starts_with("mask") {
                 self.update_mask(line.as_str());
             } else {

@@ -113,7 +113,7 @@ pub trait GameOfSeatsPuzzle : Sized + Eq {
 
     fn seating_from(filename: &str) -> io::Result<Vec<Vec<char>>> {
         Ok(all_lines(filename)?
-            .map(|line| line.unwrap().chars().collect())
+            .map(|line| line.chars().collect())
             .collect())
     }
 

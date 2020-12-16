@@ -65,7 +65,7 @@ pub struct CPUState {
 impl CPUState {
     pub fn from_file(filename: &str) -> Self {
         CPUState {program: all_lines(filename).unwrap()
-            .map(|line| Instruction::from(line.unwrap().as_str()))
+            .map(|line| Instruction::from(line.as_str()))
             .collect(),
             pc: 0,
             accumulator: 0}
