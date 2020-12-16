@@ -7,7 +7,7 @@ pub fn solve_1() -> io::Result<String> {
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    Ok(Notes::from_keep_valid(filename)?.my_departures().values().product::<usize>().to_string())
+    Ok(Notes::from_keep_valid(filename)?.departure_product().to_string())
 }
 
 #[derive(Debug,Clone,Eq,PartialEq)]
@@ -43,14 +43,6 @@ impl Notes {
         Ok(result)
     }
 
-    pub fn matches_range_for(&self, field: &str, value: usize) -> bool {
-        match self.fields.get(field) {
-            Some(((min1, max1), (min2, max2))) =>
-                *min1 <= value && value <= *max1 || *min2 <= value && value <= *max2,
-            None => false
-        }
-    }
-
     pub fn accepts_ticket(&self, ticket: &Vec<usize>) ->  bool {
         ticket.iter().all(|v| self.some_field_accepts(*v))
     }
@@ -58,6 +50,14 @@ impl Notes {
     pub fn some_field_accepts(&self, value: usize) -> bool {
         self.fields.keys()
             .any(|key| self.matches_range_for(key.as_str(), value))
+    }
+
+    pub fn matches_range_for(&self, field: &str, value: usize) -> bool {
+        match self.fields.get(field) {
+            Some(((min1, max1), (min2, max2))) =>
+                *min1 <= value && value <= *max1 || *min2 <= value && value <= *max2,
+            None => false
+        }
     }
 
     pub fn invalid_values_for(&self, ticket: &Vec<usize>) -> Vec<usize> {
@@ -94,6 +94,10 @@ impl Notes {
         self.nearby_tickets.iter()
             .map(|t| self.invalid_values_for(t).iter().sum::<usize>())
             .sum()
+    }
+
+    pub fn departure_product(&self) -> usize {
+        self.my_departures().values().product()
     }
 }
 
