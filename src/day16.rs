@@ -175,9 +175,7 @@ mod tests {
     fn test_matches() {
         let notes = Notes::from("in/day16_ex1.txt", true).unwrap();
         [(1,true), (2,true), (3,true), (4,false), (5,true), (7,true), (8,false)].iter()
-            .for_each(|(v,tf)| {
-                assert_eq!(notes.matches_range_for("class", *v), *tf);
-            });
+            .for_each(|(v,tf)| assert_eq!(notes.matches_range_for("class", *v), *tf));
     }
 
     #[test]
