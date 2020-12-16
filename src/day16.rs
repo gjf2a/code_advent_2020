@@ -3,11 +3,11 @@ use std::io;
 use advent_code_lib::all_lines;
 
 pub fn solve_1() -> io::Result<String> {
-    Ok(Notes::from_keep_all("in/day16.txt")?.nearby_ticket_scanning_error_rate().to_string())
+    Ok(Notes::from("in/day16.txt", true)?.nearby_ticket_scanning_error_rate().to_string())
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    Ok(Notes::from_keep_valid(filename)?.departure_product().to_string())
+    Ok(Notes::from(filename, false)?.departure_product().to_string())
 }
 
 #[derive(Debug,Clone,Eq,PartialEq)]
@@ -48,14 +48,6 @@ struct Notes {
 }
 
 impl Notes {
-    pub fn from_keep_all(filename: &str) -> io::Result<Self> {
-        Notes::from(filename, true)
-    }
-
-    pub fn from_keep_valid(filename: &str) -> io::Result<Self> {
-        Notes::from(filename, false)
-    }
-
     fn from(filename: &str, allow_invalid: bool) -> io::Result<Self> {
         let mut lines = all_lines(filename)?;
         let fields = Constraints::from(&mut lines.by_ref());
@@ -166,7 +158,7 @@ fn parse_field_line(line: &str) -> (String,((usize,usize),(usize,usize))) {
 }
 
 fn parse_ticket_line(line: &str) -> Vec<usize> {
-    line.split(',').map(|s| s.parse::<usize>().unwrap()).collect()
+    line.split(',').map(|s| s.parse().unwrap()).collect()
 }
 
 #[cfg(test)]
@@ -175,13 +167,13 @@ mod tests {
 
     #[test]
     fn test_ex_1() {
-        let notes = Notes::from_keep_all("in/day16_ex1.txt").unwrap();
+        let notes = Notes::from("in/day16_ex1.txt", true).unwrap();
         assert_eq!(notes.nearby_ticket_scanning_error_rate(), 71);
     }
 
     #[test]
     fn test_matches() {
-        let notes = Notes::from_keep_all("in/day16_ex1.txt").unwrap();
+        let notes = Notes::from("in/day16_ex1.txt", true).unwrap();
         [(1,true), (2,true), (3,true), (4,false), (5,true), (7,true), (8,false)].iter()
             .for_each(|(v,tf)| {
                 assert_eq!(notes.matches_range_for("class", *v), *tf);
@@ -190,32 +182,32 @@ mod tests {
 
     #[test]
     fn test_invalid_values() {
-        let notes = Notes::from_keep_all("in/day16_ex1.txt").unwrap();
+        let notes = Notes::from("in/day16_ex1.txt", true).unwrap();
         assert_eq!(notes.invalid_values_for(&vec![40,4,50]), vec![4]);
     }
 
     #[test]
     fn test_field_positions() {
-        let notes = Notes::from_keep_all("in/day16_ex2.txt").unwrap();
+        let notes = Notes::from("in/day16_ex2.txt", true).unwrap();
         assert_eq!(notes.field_positions(), btreemap! {"class".to_string() => 1, "row".to_string() => 0, "seat".to_string() => 2});
     }
 
     #[test]
     fn test_my_fields() {
-        let notes = Notes::from_keep_all("in/day16_ex2.txt").unwrap();
+        let notes = Notes::from("in/day16_ex2.txt", true).unwrap();
         assert_eq!(notes.my_field_values(), btreemap! {"class".to_string() => 12, "row".to_string() => 11, "seat".to_string() => 13});
     }
 
     #[test]
     fn test_valid_field_positions() {
-        let notes = Notes::from_keep_valid("in/day16.txt").unwrap();
+        let notes = Notes::from("in/day16.txt", false).unwrap();
         let unique_positions: BTreeSet<usize> = notes.field_positions().iter().map(|p| *p.1).collect();
         assert_eq!(unique_positions.len(), notes.num_positions());
     }
 
     #[test]
     fn test_departures() {
-        let notes = Notes::from_keep_valid("in/day16.txt").unwrap();
+        let notes = Notes::from("in/day16.txt", false).unwrap();
         assert_eq!(format!("{:?}", notes.my_departures()), r#"{"departure date": 101, "departure location": 53, "departure platform": 89, "departure station": 61, "departure time": 113, "departure track": 73}"#)
     }
 }
