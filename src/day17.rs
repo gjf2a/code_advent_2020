@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
-use std::{io, fmt};
+use std::io;
 use advent_code_lib::for_each_line;
-use std::fmt::{Display, Formatter};
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(after_n_cycles(ConwayCubes::from(filename, 3)?, 6).to_string())
@@ -23,15 +22,6 @@ impl State {
             '.' => State::INACTIVE,
             _ => panic!("Unrecognized input character: '{}'", c)
         }
-    }
-}
-
-impl Display for State {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            State::ACTIVE => '#',
-            State::INACTIVE => '.'
-        })
     }
 }
 
