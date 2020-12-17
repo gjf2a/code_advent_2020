@@ -98,10 +98,7 @@ impl PointND {
     pub fn next(&self, start: &PointND, end: &PointND) -> Option<PointND> {
         let mut next = self.clone();
         let mut c = 0;
-        loop {
-            if c == next.coords.len() {
-                return None;
-            }
+        while c < next.coords.len() {
             next.coords[c] += 1;
             if next.coords[c] > end.coords[c] {
                 next.coords[c] = start.coords[c];
@@ -110,6 +107,7 @@ impl PointND {
                 return Some(next);
             }
         }
+        None
     }
 
     pub fn neighbors(&self) -> impl Iterator<Item=PointND> {
