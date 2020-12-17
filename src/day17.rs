@@ -4,7 +4,7 @@ use advent_code_lib::for_each_line;
 use std::fmt::{Display, Formatter};
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    Ok(after_n_cycles(ConwayCubes::from(filename)?, 6, puzzle1_cycle).to_string())
+    Ok(after_n_cycles(ConwayCubes::from(filename, 3)?, 6, puzzle1_cycle).to_string())
 }
 
 #[derive(Debug,Copy,Clone,Eq,PartialEq)]
@@ -33,17 +33,17 @@ impl Display for State {
 
 #[derive(Debug,Clone,Eq,PartialEq)]
 pub struct ConwayCubes {
-    cubes: BTreeMap<Point3D,State>
+    cubes: BTreeMap<PointND,State>
 }
 
 impl ConwayCubes {
-    pub fn from(filename: &str) -> io::Result<ConwayCubes> {
+    pub fn from(filename: &str, dimension: usize) -> io::Result<ConwayCubes> {
         let mut cubes = ConwayCubes { cubes: BTreeMap::new() };
         let mut y = 0;
         for_each_line(filename, |line| Ok({
             let mut x = 0;
             for c in line.chars() {
-                cubes.cubes.insert(Point3D {x, y, z: 0}, State::from(c));
+                cubes.cubes.insert(PointND::new_zero_pad(&[x, y], dimension), State::from(c));
                 x += 1;
             }
             y += 1;
@@ -51,22 +51,22 @@ impl ConwayCubes {
         Ok(cubes)
     }
 
-    pub fn state(&self, p: &Point3D) -> State {
+    pub fn state(&self, p: &PointND) -> State {
         match self.cubes.get(&p) {
             None => State::INACTIVE,
             Some(s) => *s
         }
     }
 
-    pub fn min_point(&self) -> Point3D {
+    pub fn min_point(&self) -> PointND {
         self.cubes.first_key_value().unwrap().0.clone()
     }
 
-    pub fn max_point(&self) -> Point3D {
+    pub fn max_point(&self) -> PointND {
         self.cubes.last_key_value().unwrap().0.clone()
     }
 
-    pub fn num_active_neighbors(&self, p: &Point3D) -> usize {
+    pub fn num_active_neighbors(&self, p: &PointND) -> usize {
         p.neighbors().filter(|n| self.state(n) == State::ACTIVE).count()
     }
 
@@ -75,7 +75,7 @@ impl ConwayCubes {
     }
 }
 
-impl Display for ConwayCubes {
+/*impl Display for ConwayCubes {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut prev = self.min_point().prev_corner();
         for (p, s) in self.cubes.iter() {
@@ -86,40 +86,52 @@ impl Display for ConwayCubes {
         }
         writeln!(f, "")
     }
-}
+}*/
 
 #[derive(Clone,Eq,PartialEq,Debug,Ord,PartialOrd)]
-pub struct Point3D {
-    z: isize, y: isize, x: isize,
+pub struct PointND {
+    coords: Vec<isize>
 }
 
-impl Point3D {
-    pub fn prev_corner(&self) -> Point3D {
-        Point3D {x: self.x - 1, y: self.y - 1, z: self.z - 1}
+impl PointND {
+    pub fn new(coords: &[isize]) -> PointND {
+        PointND { coords: Vec::from(coords) }
     }
 
-    pub fn next_corner(&self) -> Point3D {
-        Point3D {x: self.x + 1, y: self.y + 1, z: self.z + 1}
+    pub fn new_zero_pad(coords: &[isize], target_len: usize) -> PointND {
+        let mut result = PointND::new(coords);
+        for _ in result.coords.len()..target_len {
+            result.coords.push(0);
+        }
+        result
     }
 
-    pub fn next(&self, start: &Point3D, end: &Point3D) -> Option<Point3D> {
+    pub fn prev_corner(&self) -> PointND {
+        PointND { coords: self.coords.iter().map(|c| c - 1).collect()}
+    }
+
+    pub fn next_corner(&self) -> PointND {
+        PointND { coords: self.coords.iter().map(|c| c + 1).collect()}
+    }
+
+    pub fn next(&self, start: &PointND, end: &PointND) -> Option<PointND> {
         let mut next = self.clone();
-        next.x += 1;
-        if next.x > end.x {
-            next.x = start.x;
-            next.y += 1;
-            if next.y > end.y {
-                next.y = start.y;
-                next.z += 1;
-                if next.z > end.z {
-                    return None;
-                }
+        let mut c = 0;
+        loop {
+            if c == next.coords.len() {
+                return None;
+            }
+            next.coords[c] += 1;
+            if next.coords[c] > end.coords[c] {
+                next.coords[c] = start.coords[c];
+                c += 1;
+            } else {
+                return Some(next);
             }
         }
-        Some(next)
     }
 
-    pub fn neighbors(&self) -> impl Iterator<Item=Point3D> {
+    pub fn neighbors(&self) -> impl Iterator<Item=PointND> {
         let avoid = self.clone();
         Point3DIterator::new(&self.prev_corner(), &self.next_corner())
             .filter(move |n| n != &avoid)
@@ -127,19 +139,19 @@ impl Point3D {
 }
 
 struct Point3DIterator {
-    start: Point3D,
-    end: Point3D,
-    next: Option<Point3D>
+    start: PointND,
+    end: PointND,
+    next: Option<PointND>
 }
 
 impl Point3DIterator {
-    pub fn new(start: &Point3D, end: &Point3D) -> Self {
+    pub fn new(start: &PointND, end: &PointND) -> Self {
         Point3DIterator { start: start.clone(), end: end.clone(), next: Some(start.clone())}
     }
 }
 
 impl Iterator for Point3DIterator {
-    type Item = Point3D;
+    type Item = PointND;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.next == None {
@@ -181,8 +193,8 @@ mod tests {
 
     #[test]
     fn test_iterator() {
-        let points: Vec<Point3D> = Point3DIterator::new(&Point3D {x: -1, y: -1, z: -1}, &Point3D {x: 1, y: 1, z: 1}).collect();
-        let target: Vec<Point3D> = [
+        let points: Vec<PointND> = Point3DIterator::new(&PointND::new(&[-1, -1, -1]), &PointND::new(&[1, 1, 1])).collect();
+        let target: Vec<PointND> = [
             (-1, -1, -1), (0, -1, -1), (1, -1, -1),
             (-1,  0, -1), (0,  0, -1), (1,  0, -1),
             (-1,  1, -1), (0,  1, -1), (1,  1, -1),
@@ -192,20 +204,22 @@ mod tests {
             (-1, -1,  1), (0, -1,  1), (1, -1,  1),
             (-1,  0,  1), (0,  0,  1), (1,  0,  1),
             (-1,  1,  1), (0,  1,  1), (1,  1,  1),
-        ].iter().map(|(x, y, z)| Point3D {x: *x, y: *y, z: *z}).collect();
+        ].iter().map(|(x, y, z)| PointND::new(&[*x, *y, *z])).collect();
         assert_eq!(points, target);
     }
 
+    /*
     #[test]
     fn test_cubes() {
-        let cubes = ConwayCubes::from("in/day17_ex.txt").unwrap();
+        let cubes = ConwayCubes::from("in/day17_ex.txt", 3).unwrap();
         assert_eq!(format!("{}", cubes).as_str(), STEPS[0]);
     }
+    */
 
     #[test]
     fn test_puzzle_1() {
         let targets = [5, 11, 21, 38];
-        let mut cubes = ConwayCubes::from("in/day17_ex.txt").unwrap();
+        let mut cubes = ConwayCubes::from("in/day17_ex.txt", 3).unwrap();
         for t in 0..6 {
             if t < targets.len() {
                 assert_eq!(cubes.num_active(), targets[t]);
@@ -214,7 +228,7 @@ mod tests {
         }
         assert_eq!(cubes.num_active(), 112);
     }
-
+/*
     const STEPS: [&str; 4] = [
         "
 z=0
@@ -321,4 +335,6 @@ z=2
 .......
 "
     ];
+
+ */
 }
