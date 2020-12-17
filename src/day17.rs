@@ -4,7 +4,11 @@ use advent_code_lib::for_each_line;
 use std::fmt::{Display, Formatter};
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    Ok(after_n_cycles(ConwayCubes::from(filename, 3)?, 6, puzzle1_cycle).to_string())
+    Ok(after_n_cycles(ConwayCubes::from(filename, 3)?, 6).to_string())
+}
+
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    Ok(after_n_cycles(ConwayCubes::from(filename, 4)?, 6).to_string())
 }
 
 #[derive(Debug,Copy,Clone,Eq,PartialEq)]
@@ -74,19 +78,6 @@ impl ConwayCubes {
         self.cubes.values().filter(|v| **v == State::ACTIVE).count()
     }
 }
-
-/*impl Display for ConwayCubes {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut prev = self.min_point().prev_corner();
-        for (p, s) in self.cubes.iter() {
-            if p.z != prev.z {write!(f, "\nz={}", p.z).unwrap();}
-            if p.y != prev.y {writeln!(f, "").unwrap();}
-            write!(f, "{}", s).unwrap();
-            prev = p.clone();
-        }
-        writeln!(f, "")
-    }
-}*/
 
 #[derive(Clone,Eq,PartialEq,Debug,Ord,PartialOrd)]
 pub struct PointND {
@@ -164,7 +155,7 @@ impl Iterator for Point3DIterator {
     }
 }
 
-fn puzzle1_cycle(start: &ConwayCubes) -> ConwayCubes {
+fn cycle(start: &ConwayCubes) -> ConwayCubes {
     let p_start = start.min_point().prev_corner();
     let p_end = start.max_point().next_corner();
     ConwayCubes {
@@ -179,10 +170,10 @@ fn puzzle1_cycle(start: &ConwayCubes) -> ConwayCubes {
     }
 }
 
-fn after_n_cycles<F:Fn(&ConwayCubes)->ConwayCubes>(start: ConwayCubes, n: usize, cycler: F) -> usize {
+fn after_n_cycles(start: ConwayCubes, n: usize) -> usize {
     let mut cubes = start;
     for _ in 0..n {
-        cubes = cycler(&cubes);
+        cubes = cycle(&cubes);
     }
     cubes.num_active()
 }
@@ -208,14 +199,6 @@ mod tests {
         assert_eq!(points, target);
     }
 
-    /*
-    #[test]
-    fn test_cubes() {
-        let cubes = ConwayCubes::from("in/day17_ex.txt", 3).unwrap();
-        assert_eq!(format!("{}", cubes).as_str(), STEPS[0]);
-    }
-    */
-
     #[test]
     fn test_puzzle_1() {
         let targets = [5, 11, 21, 38];
@@ -224,117 +207,14 @@ mod tests {
             if t < targets.len() {
                 assert_eq!(cubes.num_active(), targets[t]);
             }
-            cubes = puzzle1_cycle(&cubes);
+            cubes = cycle(&cubes);
         }
         assert_eq!(cubes.num_active(), 112);
     }
-/*
-    const STEPS: [&str; 4] = [
-        "
-z=0
-.#.
-..#
-###
-",
-        "
-z=-1
-#..
-..#
-.#.
 
-z=0
-#.#
-.##
-.#.
-
-z=1
-#..
-..#
-.#.
-",
-        "
-z=-2
-.....
-.....
-..#..
-.....
-.....
-
-z=-1
-..#..
-.#..#
-....#
-.#...
-.....
-
-z=0
-##...
-##...
-#....
-....#
-.###.
-
-z=1
-..#..
-.#..#
-....#
-.#...
-.....
-
-z=2
-.....
-.....
-..#..
-.....
-.....
-",
-        "
-z=-2
-.......
-.......
-..##...
-..###..
-.......
-.......
-.......
-
-z=-1
-..#....
-...#...
-#......
-.....##
-.#...#.
-..#.#..
-...#...
-
-z=0
-...#...
-.......
-#......
-.......
-.....##
-.##.#..
-...#...
-
-z=1
-..#....
-...#...
-#......
-.....##
-.#...#.
-..#.#..
-...#...
-
-z=2
-.......
-.......
-..##...
-..###..
-.......
-.......
-.......
-"
-    ];
-
- */
+    #[test]
+    fn test_puzzle_2() {
+        let cubes = ConwayCubes::from("in/day17_ex.txt", 4).unwrap();
+        assert_eq!(after_n_cycles(cubes, 6), 848);
+    }
 }
