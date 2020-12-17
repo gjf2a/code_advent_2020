@@ -4,6 +4,10 @@ use std::{io, fmt};
 use advent_code_lib::for_each_line;
 use std::fmt::{Display, Formatter};
 
+pub fn solve_1(filename: &str) -> io::Result<String> {
+    Ok(after_n_cycles(ConwayCubes::from(filename)?, 6, puzzle1_cycle).to_string())
+}
+
 #[derive(Debug,Copy,Clone,Eq,PartialEq)]
 pub enum State {
     ACTIVE, INACTIVE
@@ -54,11 +58,32 @@ impl ConwayCubes {
             Some(s) => *s
         }
     }
+
+    pub fn min_point(&self) -> Point3D {
+        *self.cubes.first_key_value().unwrap().0
+    }
+
+    pub fn max_point(&self) -> Point3D {
+        *self.cubes.last_key_value().unwrap().0
+    }
+
+    pub fn neighbors(&self, p: Point3D) -> impl Iterator<Item=Point3D> {
+        Point3DIterator::new(p + Point3D {x: -1, y: -1, z: -1}, p + Point3D {x: 1, y: 1, z: 1})
+            .filter(move |n| *n != p)
+    }
+
+    pub fn num_active_neighbors(&self, p: Point3D) -> usize {
+        self.neighbors(p).filter(|n| self.state(*n) == State::ACTIVE).count()
+    }
+
+    pub fn num_active(&self) -> usize {
+        self.cubes.values().filter(|v| **v == State::ACTIVE).count()
+    }
 }
 
 impl Display for ConwayCubes {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut prev = *self.cubes.first_key_value().unwrap().0;
+        let mut prev = self.min_point();
         let offset = Point3D {x: prev.x, y: prev.y - 1, z: prev.z - 1};
         prev += offset;
         for (p, s) in self.cubes.iter() {
@@ -131,6 +156,29 @@ impl Iterator for Point3DIterator {
     }
 }
 
+fn puzzle1_cycle(start: &ConwayCubes) -> ConwayCubes {
+    let p_start = start.min_point() + Point3D { x: -1, y: -1, z: -1 };
+    let p_end = start.max_point() + Point3D { x: 1, y: 1, z: 1 };
+    ConwayCubes {
+        cubes: Point3DIterator::new(p_start, p_end)
+            .map(|p| {
+                let neighbor_active = start.num_active_neighbors(p);
+                (p, if neighbor_active == 3 || neighbor_active == 2 && start.state(p) == State::ACTIVE {
+                    State::ACTIVE
+                } else {State::INACTIVE})
+            })
+            .collect()
+    }
+}
+
+fn after_n_cycles<F:Fn(&ConwayCubes)->ConwayCubes>(start: ConwayCubes, n: usize, cycler: F) -> usize {
+    let mut cubes = start;
+    for _ in 0..n {
+        cubes = cycler(&cubes);
+    }
+    cubes.num_active()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,6 +204,19 @@ mod tests {
     fn test_cubes() {
         let cubes = ConwayCubes::from("in/day17_ex.txt").unwrap();
         assert_eq!(format!("{}", cubes).as_str(), STEPS[0]);
+    }
+
+    #[test]
+    fn test_puzzle_1() {
+        let targets = [5, 11, 21, 38];
+        let mut cubes = ConwayCubes::from("in/day17_ex.txt").unwrap();
+        for t in 0..6 {
+            if t < targets.len() {
+                assert_eq!(cubes.num_active(), targets[t]);
+            }
+            cubes = puzzle1_cycle(&cubes);
+        }
+        assert_eq!(cubes.num_active(), 112);
     }
 
     const STEPS: [&str; 4] = [
