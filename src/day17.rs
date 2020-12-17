@@ -1,4 +1,3 @@
-use std::ops::{Add, AddAssign};
 use std::collections::BTreeMap;
 use std::{io, fmt};
 use advent_code_lib::for_each_line;
@@ -52,7 +51,7 @@ impl ConwayCubes {
         Ok(cubes)
     }
 
-    pub fn state(&self, p: Point3D) -> State {
+    pub fn state(&self, p: &Point3D) -> State {
         match self.cubes.get(&p) {
             None => State::INACTIVE,
             Some(s) => *s
@@ -60,20 +59,15 @@ impl ConwayCubes {
     }
 
     pub fn min_point(&self) -> Point3D {
-        *self.cubes.first_key_value().unwrap().0
+        self.cubes.first_key_value().unwrap().0.clone()
     }
 
     pub fn max_point(&self) -> Point3D {
-        *self.cubes.last_key_value().unwrap().0
+        self.cubes.last_key_value().unwrap().0.clone()
     }
 
-    pub fn neighbors(&self, p: Point3D) -> impl Iterator<Item=Point3D> {
-        Point3DIterator::new(p + Point3D {x: -1, y: -1, z: -1}, p + Point3D {x: 1, y: 1, z: 1})
-            .filter(move |n| *n != p)
-    }
-
-    pub fn num_active_neighbors(&self, p: Point3D) -> usize {
-        self.neighbors(p).filter(|n| self.state(*n) == State::ACTIVE).count()
+    pub fn num_active_neighbors(&self, p: &Point3D) -> usize {
+        p.neighbors().filter(|n| self.state(n) == State::ACTIVE).count()
     }
 
     pub fn num_active(&self) -> usize {
@@ -83,35 +77,52 @@ impl ConwayCubes {
 
 impl Display for ConwayCubes {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut prev = self.min_point();
-        let offset = Point3D {x: prev.x, y: prev.y - 1, z: prev.z - 1};
-        prev += offset;
+        let mut prev = self.min_point().prev_corner();
         for (p, s) in self.cubes.iter() {
             if p.z != prev.z {write!(f, "\nz={}", p.z).unwrap();}
             if p.y != prev.y {writeln!(f, "").unwrap();}
             write!(f, "{}", s).unwrap();
-            prev = *p;
+            prev = p.clone();
         }
         writeln!(f, "")
     }
 }
 
-#[derive(Copy,Clone,Eq,PartialEq,Debug,Ord,PartialOrd)]
+#[derive(Clone,Eq,PartialEq,Debug,Ord,PartialOrd)]
 pub struct Point3D {
     z: isize, y: isize, x: isize,
 }
 
-impl Add for Point3D {
-    type Output = Point3D;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Point3D { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
+impl Point3D {
+    pub fn prev_corner(&self) -> Point3D {
+        Point3D {x: self.x - 1, y: self.y - 1, z: self.z - 1}
     }
-}
 
-impl AddAssign for Point3D {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
+    pub fn next_corner(&self) -> Point3D {
+        Point3D {x: self.x + 1, y: self.y + 1, z: self.z + 1}
+    }
+
+    pub fn next(&self, start: &Point3D, end: &Point3D) -> Option<Point3D> {
+        let mut next = self.clone();
+        next.x += 1;
+        if next.x > end.x {
+            next.x = start.x;
+            next.y += 1;
+            if next.y > end.y {
+                next.y = start.y;
+                next.z += 1;
+                if next.z > end.z {
+                    return None;
+                }
+            }
+        }
+        Some(next)
+    }
+
+    pub fn neighbors(&self) -> impl Iterator<Item=Point3D> {
+        let avoid = self.clone();
+        Point3DIterator::new(&self.prev_corner(), &self.next_corner())
+            .filter(move |n| n != &avoid)
     }
 }
 
@@ -122,27 +133,8 @@ struct Point3DIterator {
 }
 
 impl Point3DIterator {
-    pub fn new(start: Point3D, end: Point3D) -> Self {
-        Point3DIterator { start, end, next: Some(start)}
-    }
-
-    pub fn update(&mut self) {
-        if let Some(mut next) = self.next {
-            next.x += 1;
-            if next.x > self.end.x {
-                next.x = self.start.x;
-                next.y += 1;
-                if next.y > self.end.y {
-                    next.y = self.start.y;
-                    next.z += 1;
-                    if next.z > self.end.z {
-                        self.next = None;
-                        return;
-                    }
-                }
-            }
-            self.next = Some(next);
-        }
+    pub fn new(start: &Point3D, end: &Point3D) -> Self {
+        Point3DIterator { start: start.clone(), end: end.clone(), next: Some(start.clone())}
     }
 }
 
@@ -150,20 +142,24 @@ impl Iterator for Point3DIterator {
     type Item = Point3D;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let result = self.next;
-        self.update();
-        result
+        if self.next == None {
+            None
+        } else {
+            let result = self.next.clone();
+            self.next = self.next.clone().unwrap().next(&self.start, &self.end);
+            result
+        }
     }
 }
 
 fn puzzle1_cycle(start: &ConwayCubes) -> ConwayCubes {
-    let p_start = start.min_point() + Point3D { x: -1, y: -1, z: -1 };
-    let p_end = start.max_point() + Point3D { x: 1, y: 1, z: 1 };
+    let p_start = start.min_point().prev_corner();
+    let p_end = start.max_point().next_corner();
     ConwayCubes {
-        cubes: Point3DIterator::new(p_start, p_end)
+        cubes: Point3DIterator::new(&p_start, &p_end)
             .map(|p| {
-                let neighbor_active = start.num_active_neighbors(p);
-                (p, if neighbor_active == 3 || neighbor_active == 2 && start.state(p) == State::ACTIVE {
+                let neighbor_active = start.num_active_neighbors(&p);
+                (p.clone(), if neighbor_active == 3 || neighbor_active == 2 && start.state(&p) == State::ACTIVE {
                     State::ACTIVE
                 } else {State::INACTIVE})
             })
@@ -185,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_iterator() {
-        let points: Vec<Point3D> = Point3DIterator::new(Point3D {x: -1, y: -1, z: -1}, Point3D {x: 1, y: 1, z: 1}).collect();
+        let points: Vec<Point3D> = Point3DIterator::new(&Point3D {x: -1, y: -1, z: -1}, &Point3D {x: 1, y: 1, z: 1}).collect();
         let target: Vec<Point3D> = [
             (-1, -1, -1), (0, -1, -1), (1, -1, -1),
             (-1,  0, -1), (0,  0, -1), (1,  0, -1),
