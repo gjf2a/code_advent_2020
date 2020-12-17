@@ -1,7 +1,8 @@
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 use std::collections::BTreeMap;
-use std::io;
+use std::{io, fmt};
 use advent_code_lib::for_each_line;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug,Copy,Clone,Eq,PartialEq)]
 pub enum State {
@@ -15,6 +16,15 @@ impl State {
             '.' => State::INACTIVE,
             _ => panic!("Unrecognized input character: '{}'", c)
         }
+    }
+}
+
+impl Display for State {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            State::ACTIVE => '#',
+            State::INACTIVE => '.'
+        })
     }
 }
 
@@ -37,11 +47,33 @@ impl ConwayCubes {
         }))?;
         Ok(cubes)
     }
+
+    pub fn state(&self, p: Point3D) -> State {
+        match self.cubes.get(&p) {
+            None => State::INACTIVE,
+            Some(s) => *s
+        }
+    }
+}
+
+impl Display for ConwayCubes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut prev = *self.cubes.first_key_value().unwrap().0;
+        let offset = Point3D {x: prev.x, y: prev.y - 1, z: prev.z - 1};
+        prev += offset;
+        for (p, s) in self.cubes.iter() {
+            if p.z != prev.z {write!(f, "\nz={}", p.z).unwrap();}
+            if p.y != prev.y {writeln!(f, "").unwrap();}
+            write!(f, "{}", s).unwrap();
+            prev = *p;
+        }
+        writeln!(f, "")
+    }
 }
 
 #[derive(Copy,Clone,Eq,PartialEq,Debug,Ord,PartialOrd)]
 pub struct Point3D {
-    x: isize, y: isize, z: isize
+    z: isize, y: isize, x: isize,
 }
 
 impl Add for Point3D {
@@ -49,6 +81,12 @@ impl Add for Point3D {
 
     fn add(self, rhs: Self) -> Self::Output {
         Point3D { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
+    }
+}
+
+impl AddAssign for Point3D {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 
@@ -113,4 +151,117 @@ mod tests {
         ].iter().map(|(x, y, z)| Point3D {x: *x, y: *y, z: *z}).collect();
         assert_eq!(points, target);
     }
+
+    #[test]
+    fn test_cubes() {
+        let cubes = ConwayCubes::from("in/day17_ex.txt").unwrap();
+        assert_eq!(format!("{}", cubes).as_str(), STEPS[0]);
+    }
+
+    const STEPS: [&str; 4] = [
+        "
+z=0
+.#.
+..#
+###
+",
+        "
+z=-1
+#..
+..#
+.#.
+
+z=0
+#.#
+.##
+.#.
+
+z=1
+#..
+..#
+.#.
+",
+        "
+z=-2
+.....
+.....
+..#..
+.....
+.....
+
+z=-1
+..#..
+.#..#
+....#
+.#...
+.....
+
+z=0
+##...
+##...
+#....
+....#
+.###.
+
+z=1
+..#..
+.#..#
+....#
+.#...
+.....
+
+z=2
+.....
+.....
+..#..
+.....
+.....
+",
+        "
+z=-2
+.......
+.......
+..##...
+..###..
+.......
+.......
+.......
+
+z=-1
+..#....
+...#...
+#......
+.....##
+.#...#.
+..#.#..
+...#...
+
+z=0
+...#...
+.......
+#......
+.......
+.....##
+.##.#..
+...#...
+
+z=1
+..#....
+...#...
+#......
+.....##
+.#...#.
+..#.#..
+...#...
+
+z=2
+.......
+.......
+..##...
+..###..
+.......
+.......
+.......
+"
+    ];
 }
