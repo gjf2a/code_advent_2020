@@ -46,10 +46,7 @@ impl ConwayCubes {
     }
 
     pub fn state(&self, p: &PointND) -> State {
-        match self.cubes.get(&p) {
-            None => State::INACTIVE,
-            Some(s) => *s
-        }
+        self.cubes.get(&p).map_or(State::INACTIVE, |s| *s)
     }
 
     pub fn min_point(&self) -> PointND {
