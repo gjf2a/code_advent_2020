@@ -112,24 +112,24 @@ impl PointND {
 
     pub fn neighbors(&self) -> impl Iterator<Item=PointND> {
         let avoid = self.clone();
-        Point3DIterator::new(&self.prev_corner(), &self.next_corner())
+        PointNDIterator::new(&self.prev_corner(), &self.next_corner())
             .filter(move |n| n != &avoid)
     }
 }
 
-struct Point3DIterator {
+struct PointNDIterator {
     start: PointND,
     end: PointND,
     next: Option<PointND>
 }
 
-impl Point3DIterator {
+impl PointNDIterator {
     pub fn new(start: &PointND, end: &PointND) -> Self {
-        Point3DIterator { start: start.clone(), end: end.clone(), next: Some(start.clone())}
+        PointNDIterator { start: start.clone(), end: end.clone(), next: Some(start.clone())}
     }
 }
 
-impl Iterator for Point3DIterator {
+impl Iterator for PointNDIterator {
     type Item = PointND;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -153,7 +153,7 @@ fn new_cell_state(cell: State, num_active_neighbors: usize) -> State {
 
 fn cycle(start: &ConwayCubes) -> ConwayCubes {
     ConwayCubes {
-        cubes: Point3DIterator::new(&start.min_point().prev_corner(), &start.max_point().next_corner())
+        cubes: PointNDIterator::new(&start.min_point().prev_corner(), &start.max_point().next_corner())
             .map(|p| (p.clone(), new_cell_state(start.state(&p),
                                                 start.num_active_neighbors(&p))))
             .collect()
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_iterator() {
-        let points: Vec<PointND> = Point3DIterator::new(&PointND::new(&[-1, -1, -1]), &PointND::new(&[1, 1, 1])).collect();
+        let points: Vec<PointND> = PointNDIterator::new(&PointND::new(&[-1, -1, -1]), &PointND::new(&[1, 1, 1])).collect();
         let target: Vec<PointND> = [
             (-1, -1, -1), (0, -1, -1), (1, -1, -1),
             (-1,  0, -1), (0,  0, -1), (1,  0, -1),
