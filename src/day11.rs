@@ -18,6 +18,26 @@ pub fn num_occupied_at_stable(iter: GameOfSeatsIterator) -> usize {
     iter.last().unwrap().num_occupied()
 }
 
+pub fn puzzle_1_iter(start: GameOfSeats) -> GameOfSeatsIterator {
+    GameOfSeatsIterator { gos: Some(start), too_many_adj: 4, projection: |_,d,p| p.updated(d) }
+}
+
+pub fn puzzle_2_iter(start: GameOfSeats) -> GameOfSeatsIterator {
+    GameOfSeatsIterator {
+        gos: Some(start),
+        too_many_adj: 5,
+        projection: |gos, d, p| {
+            let mut p = p;
+            loop {
+                p.update(d);
+                if !gos.within_outer_ring(p) || gos.seat(p) != FLOOR {
+                    return p;
+                }
+            }
+        },
+    }
+}
+
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct GameOfSeats {
     seating: Vec<Vec<char>>
@@ -68,26 +88,6 @@ impl GameOfSeats {
     }
 }
 
-pub fn puzzle_1_iter(start: GameOfSeats) -> GameOfSeatsIterator {
-    GameOfSeatsIterator { gos: Some(start), too_many_adj: 4, projection: |_,d,p| p.updated(d) }
-}
-
-pub fn puzzle_2_iter(start: GameOfSeats) -> GameOfSeatsIterator {
-    GameOfSeatsIterator {
-        gos: Some(start),
-        too_many_adj: 5,
-        projection: |gos, d, p| {
-            let mut p = p;
-            loop {
-                p.update(d);
-                if !gos.within_outer_ring(p) || gos.seat(p) != FLOOR {
-                    return p;
-                }
-            }
-        },
-    }
-}
-
 #[derive(Clone)]
 pub struct GameOfSeatsIterator {
     gos: Option<GameOfSeats>,
@@ -110,6 +110,15 @@ impl GameOfSeatsIterator {
         }
     }
 
+    pub fn iterated_seat_at(&self, p: Position) -> char {
+        let gos = &self.gos.as_ref().unwrap();
+        let seat = gos.seat(p);
+        let adj = self.num_adj_occupied(p);
+        if seat == EMPTY && adj == 0 {OCCUPIED}
+        else if seat == OCCUPIED && adj >= self.too_many_adj {EMPTY}
+        else { seat }
+    }
+
     pub fn num_adj_occupied(&self, p: Position) -> usize {
         let gos = &self.gos.as_ref().unwrap();
         if gos.in_bounds(p) {
@@ -119,15 +128,6 @@ impl GameOfSeatsIterator {
         } else {
             0
         }
-    }
-
-    pub fn iterated_seat_at(&self, p: Position) -> char {
-        let gos = &self.gos.as_ref().unwrap();
-        let seat = gos.seat(p);
-        let adj = self.num_adj_occupied(p);
-        if seat == EMPTY && adj == 0 {OCCUPIED}
-        else if seat == OCCUPIED && adj >= self.too_many_adj {EMPTY}
-        else { seat }
     }
 }
 
@@ -169,7 +169,6 @@ mod tests {
 
     fn test_example(mut iter: GameOfSeatsIterator, targets: &[&str]) {
         for i in 0..targets.len() {
-            println!("Testing target {}", i);
             assert_eq!(iter.next().unwrap().to_string(), targets[i]);
         }
         assert!(iter.next() == None);
