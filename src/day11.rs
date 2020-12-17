@@ -7,171 +7,74 @@ const FLOOR: char = '.';
 const EMPTY: char = 'L';
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    Ok(Puzzle1::from(filename)?.stable_state().num_occupied().to_string())
+    Ok(num_occupied_at_stable(puzzle_1_iter(GameOfSeats::from(filename)?)).to_string())
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    Ok(Puzzle2::from(filename)?.stable_state().num_occupied().to_string())
+    Ok(num_occupied_at_stable(puzzle_2_iter(GameOfSeats::from(filename)?)).to_string())
 }
 
-#[derive(Debug,Clone,Eq,PartialEq)]
-struct Puzzle1 {
-    seating: Vec<Vec<char>>
+pub fn num_occupied_at_stable(iter: GameOfSeatsIterator) -> usize {
+    iter.last().unwrap().num_occupied()
 }
 
-impl Puzzle1 {
-    fn from(filename: &str) -> io::Result<Self> {
-        Ok(Puzzle1 {seating: Puzzle1::seating_from(filename)?})
-    }
+pub fn project_puzzle_1(_: &GameOfSeats, d: Dir, p: Position) -> Position {
+    p.updated(d)
 }
 
-impl Display for Puzzle1 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        format_seating(f, self.seating())
-    }
-}
-
-impl GameOfSeatsPuzzle for Puzzle1 {
-    fn seating(&self) -> &Vec<Vec<char>> {
-        &self.seating
-    }
-
-    fn create_next(&self) -> Self {
-        Puzzle1 {seating: self.create_next_seating()}
-    }
-
-    fn too_many_adj(&self) -> usize {
-        4
-    }
-
-    fn project(&self, d: Dir, p: Position) -> Position {
-        p.updated(d)
-    }
-
-    fn iter(&self) -> GameOfSeatsIterator<Self> {
-        GameOfSeatsIterator { gos: Some(self.clone()) }
-    }
-}
-
-#[derive(Debug,Clone,Eq,PartialEq)]
-struct Puzzle2 {
-    seating: Vec<Vec<char>>
-}
-
-impl Puzzle2 {
-    fn from(filename: &str) -> io::Result<Self> {
-        Ok(Puzzle2 {seating: Puzzle2::seating_from(filename)?})
-    }
-}
-
-impl GameOfSeatsPuzzle for Puzzle2 {
-    fn seating(&self) -> &Vec<Vec<char>> {
-        &self.seating
-    }
-
-    fn create_next(&self) -> Self {
-        Puzzle2 {seating: self.create_next_seating()}
-    }
-
-    fn too_many_adj(&self) -> usize {
-        5
-    }
-
-    fn project(&self, d: Dir, p: Position) -> Position {
-        let mut p = p;
-        loop {
-            p.update(d);
-            if !self.within_outer_ring(p) || self.seat(p) != FLOOR {
-                return p;
-            }
+pub fn project_puzzle_2(gos: &GameOfSeats, d: Dir, p: Position) -> Position {
+    let mut p = p;
+    loop {
+        p.update(d);
+        if !gos.within_outer_ring(p) || gos.seat(p) != FLOOR {
+            return p;
         }
     }
-
-    fn iter(&self) -> GameOfSeatsIterator<Self> {
-        GameOfSeatsIterator { gos: Some(self.clone()) }
-    }
 }
 
-impl Display for Puzzle2 {
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct GameOfSeats {
+    seating: Vec<Vec<char>>
+}
+
+impl Display for GameOfSeats {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        format_seating(f, self.seating())
+        write!(f, "{}", self.seating.iter()
+            .map(|line| format!("{}\n", line.iter().collect::<String>()))
+            .collect::<String>())
     }
 }
 
-fn format_seating(f: &mut Formatter<'_>, seating: &Vec<Vec<char>>) -> Result<(), Error> {
-    write!(f, "{}", seating.iter()
-        .map(|line| format!("{}\n", line.iter().collect::<String>()))
-        .collect::<String>())
-}
-
-pub trait GameOfSeatsPuzzle : Sized + Eq {
-    fn seating(&self) -> &Vec<Vec<char>>;
-    fn create_next(&self) -> Self;
-    fn too_many_adj(&self) -> usize;
-    fn project(&self, d: Dir, p: Position) -> Position;
-    fn iter(&self) -> GameOfSeatsIterator<Self>;
-
-    fn seating_from(filename: &str) -> io::Result<Vec<Vec<char>>> {
-        Ok(all_lines(filename)?
-            .map(|line| line.chars().collect())
-            .collect())
+impl GameOfSeats {
+    pub fn from(filename: &str) -> io::Result<Self> {
+        Ok(GameOfSeats {
+            seating: all_lines(filename)?
+                .map(|line| line.chars().collect())
+                .collect()
+        })
     }
 
-    fn height(&self) -> usize {self.seating().len()}
-    fn width(&self) -> usize {self.seating()[0].len()}
+    pub fn height(&self) -> usize {self.seating.len()}
+    pub fn width(&self) -> usize {self.seating[0].len()}
 
-    fn seat(&self, p: Position) -> char {
+    pub fn seat(&self, p: Position) -> char {
         if self.in_bounds(p) {
-            self.seating()[p.row as usize][p.col as usize]
+            self.seating[p.row as usize][p.col as usize]
         } else {
             FLOOR
         }
     }
 
-    fn within_outer_ring(&self, p: Position) -> bool {
+    pub fn within_outer_ring(&self, p: Position) -> bool {
         p.col >= -1 && p.row >= -1 && p.col <= self.width() as isize && p.row <= self.height() as isize
     }
 
-    fn in_bounds(&self, p: Position) -> bool {
-        p.col >= 0 && p.row >= 0 && self.in_bounds_u(p.col as usize, p.row as usize)
+    pub fn in_bounds(&self, p: Position) -> bool {
+        p.col >= 0 && p.row >= 0 && p.col < self.width() as isize && p.row < self.height() as isize
     }
 
-    fn in_bounds_u(&self, col: usize, row: usize) -> bool {
-        col < self.width() && row < self.height()
-    }
-
-    fn num_adj_occupied(&self, p: Position) -> Option<usize> {
-        if self.in_bounds(p) {
-            Some(DirIter::new()
-                .filter(|d| self.seat(self.project(*d, p)) == OCCUPIED)
-                .count())
-        } else {
-            None
-        }
-    }
-
-    fn create_next_seating(&self) -> Vec<Vec<char>> {
-        (0..self.height())
-                .map(|row| (0..self.width())
-                    .map(|col| self.iterated_seat_at(Position {col: col as isize, row: row as isize}))
-                    .collect())
-                .collect()
-    }
-
-    fn iterated_seat_at(&self, p: Position) -> char {
-        let seat = self.seat(p);
-        let adj = self.num_adj_occupied(p).unwrap();
-        if seat == EMPTY && adj == 0 {OCCUPIED}
-        else if seat == OCCUPIED && adj >= self.too_many_adj() {EMPTY}
-        else { seat }
-    }
-
-    fn stable_state(&self) -> Self {
-        self.iter().last().unwrap()
-    }
-
-    fn num_occupied(&self) -> usize {
-        self.seating().iter()
+    pub fn num_occupied(&self) -> usize {
+        self.seating.iter()
             .map(|row| row.iter()
                 .filter(|s| **s == OCCUPIED)
                 .count())
@@ -179,13 +82,62 @@ pub trait GameOfSeatsPuzzle : Sized + Eq {
     }
 }
 
-pub struct GameOfSeatsIterator<T> {
-    gos: Option<T>
+pub fn puzzle_1_iter(start: GameOfSeats) -> GameOfSeatsIterator {
+    GameOfSeatsIterator { gos: Some(start), too_many_adj: 4, projection: project_puzzle_1 }
 }
 
-impl <T:GameOfSeatsPuzzle+Eq> GameOfSeatsIterator<T> {
-    fn update_next(&mut self, candidate: T) -> Option<<GameOfSeatsIterator<T> as Iterator>::Item> {
-        let mut next = Some(candidate);
+pub fn puzzle_2_iter(start: GameOfSeats) -> GameOfSeatsIterator {
+    GameOfSeatsIterator { gos: Some(start), too_many_adj: 5, projection: project_puzzle_2 }
+}
+
+#[derive(Clone)]
+pub struct GameOfSeatsIterator {
+    gos: Option<GameOfSeats>,
+    too_many_adj: usize,
+    projection: fn(&GameOfSeats,Dir,Position)->Position
+}
+
+impl GameOfSeatsIterator {
+    pub fn create_next(&self) -> Option<GameOfSeats> {
+        if let Some(gos) = &self.gos {
+            Some(GameOfSeats {
+                seating: (0..gos.height())
+                    .map(|row| (0..gos.width())
+                        .map(|col| self.iterated_seat_at(Position { col: col as isize, row: row as isize }))
+                        .collect())
+                    .collect()
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn num_adj_occupied(&self, p: Position) -> usize {
+        let gos = &self.gos.as_ref().unwrap();
+        if gos.in_bounds(p) {
+            DirIter::new()
+                .filter(|d| gos.seat((self.projection)(gos, *d, p)) == OCCUPIED)
+                .count()
+        } else {
+            0
+        }
+    }
+
+    pub fn iterated_seat_at(&self, p: Position) -> char {
+        let gos = &self.gos.as_ref().unwrap();
+        let seat = gos.seat(p);
+        let adj = self.num_adj_occupied(p);
+        if seat == EMPTY && adj == 0 {OCCUPIED}
+        else if seat == OCCUPIED && adj >= self.too_many_adj {EMPTY}
+        else { seat }
+    }
+}
+
+impl Iterator for GameOfSeatsIterator {
+    type Item = GameOfSeats;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut next = self.create_next();
         if next == self.gos {
             self.gos = None;
         } else {
@@ -195,42 +147,31 @@ impl <T:GameOfSeatsPuzzle+Eq> GameOfSeatsIterator<T> {
     }
 }
 
-impl <T:GameOfSeatsPuzzle+Eq> Iterator for GameOfSeatsIterator<T> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(gos) = &self.gos {
-            let candidate = gos.create_next();
-            self.update_next(candidate)
-        } else {
-            None
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_create() {
-        let start = Puzzle1::from("in/day11_ex1.txt").unwrap();
+        let start = GameOfSeats::from("in/day11_ex1.txt").unwrap();
         assert_eq!(start.to_string(), EXPECTED_1[0]);
     }
 
     #[test]
     fn test_example_1() -> io::Result<()> {
-        Ok(test_example(Puzzle1::from("in/day11_ex1.txt")?, &EXPECTED_1))
+        test_example(puzzle_1_iter(GameOfSeats::from("in/day11_ex1.txt")?), &EXPECTED_1);
+        Ok(())
     }
 
     #[test]
     fn test_example_2() -> io::Result<()> {
-        Ok(test_example(Puzzle2::from("in/day11_ex1.txt")?, &EXPECTED_2))
+        test_example(puzzle_2_iter(GameOfSeats::from("in/day11_ex1.txt")?), &EXPECTED_2);
+        Ok(())
     }
 
-    fn test_example<P:GameOfSeatsPuzzle+Display>(start: P, targets: &[&str]) {
-        let mut iter = start.iter();
+    fn test_example(mut iter: GameOfSeatsIterator, targets: &[&str]) {
         for i in 0..targets.len() {
+            println!("Testing target {}", i);
             assert_eq!(iter.next().unwrap().to_string(), targets[i]);
         }
         assert!(iter.next() == None);
@@ -326,7 +267,7 @@ LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL
 ",
-"#.##.##.##
+        "#.##.##.##
 #######.##
 #.#.#..#..
 ####.##.##
@@ -337,7 +278,7 @@ L.LLLLL.LL
 #.######.#
 #.#####.##
 ",
-"#.LL.LL.L#
+        "#.LL.LL.L#
 #LLLLLL.LL
 L.L.L..L..
 LLLL.LL.LL
@@ -348,7 +289,7 @@ LLLLLLLLL#
 #.LLLLLL.L
 #.LLLLL.L#
 ",
-"#.L#.##.L#
+        "#.L#.##.L#
 #L#####.LL
 L.#.#..#..
 ##L#.##.##
@@ -359,7 +300,7 @@ LLL####LL#
 #.L#####.L
 #.L####.L#
 ",
-"#.L#.L#.L#
+        "#.L#.L#.L#
 #LLLLLL.LL
 L.L.L..#..
 ##LL.LL.L#
@@ -370,7 +311,7 @@ LLLLLLLLL#
 #.LLLLL#.L
 #.L#LL#.L#
 ",
-"#.L#.L#.L#
+        "#.L#.L#.L#
 #LLLLLL.LL
 L.L.L..#..
 ##L#.#L.L#
@@ -381,7 +322,7 @@ LLL###LLL#
 #.LLLLL#.L
 #.L#LL#.L#
 ",
-"#.L#.L#.L#
+        "#.L#.L#.L#
 #LLLLLL.LL
 L.L.L..#..
 ##L#.#L.L#
