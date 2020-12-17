@@ -143,17 +143,19 @@ impl Iterator for Point3DIterator {
     }
 }
 
+fn new_cell_state(cell: State, num_active_neighbors: usize) -> State {
+    if num_active_neighbors == 3 || num_active_neighbors == 2 && cell == State::ACTIVE {
+        State::ACTIVE
+    } else {
+        State::INACTIVE
+    }
+}
+
 fn cycle(start: &ConwayCubes) -> ConwayCubes {
-    let p_start = start.min_point().prev_corner();
-    let p_end = start.max_point().next_corner();
     ConwayCubes {
-        cubes: Point3DIterator::new(&p_start, &p_end)
-            .map(|p| {
-                let neighbor_active = start.num_active_neighbors(&p);
-                (p.clone(), if neighbor_active == 3 || neighbor_active == 2 && start.state(&p) == State::ACTIVE {
-                    State::ACTIVE
-                } else {State::INACTIVE})
-            })
+        cubes: Point3DIterator::new(&start.min_point().prev_corner(), &start.max_point().next_corner())
+            .map(|p| (p.clone(), new_cell_state(start.state(&p),
+                                                start.num_active_neighbors(&p))))
             .collect()
     }
 }
