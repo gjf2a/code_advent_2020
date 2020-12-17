@@ -213,6 +213,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_puzzle_2() {
         let cubes = ConwayCubes::from("in/day17_ex.txt", 4).unwrap();
         assert_eq!(after_n_cycles(cubes, 6), 848);
