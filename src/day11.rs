@@ -18,20 +18,6 @@ pub fn num_occupied_at_stable(iter: GameOfSeatsIterator) -> usize {
     iter.last().unwrap().num_occupied()
 }
 
-pub fn project_puzzle_1(_: &GameOfSeats, d: Dir, p: Position) -> Position {
-    p.updated(d)
-}
-
-pub fn project_puzzle_2(gos: &GameOfSeats, d: Dir, p: Position) -> Position {
-    let mut p = p;
-    loop {
-        p.update(d);
-        if !gos.within_outer_ring(p) || gos.seat(p) != FLOOR {
-            return p;
-        }
-    }
-}
-
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct GameOfSeats {
     seating: Vec<Vec<char>>
@@ -83,11 +69,23 @@ impl GameOfSeats {
 }
 
 pub fn puzzle_1_iter(start: GameOfSeats) -> GameOfSeatsIterator {
-    GameOfSeatsIterator { gos: Some(start), too_many_adj: 4, projection: project_puzzle_1 }
+    GameOfSeatsIterator { gos: Some(start), too_many_adj: 4, projection: |_,d,p| p.updated(d) }
 }
 
 pub fn puzzle_2_iter(start: GameOfSeats) -> GameOfSeatsIterator {
-    GameOfSeatsIterator { gos: Some(start), too_many_adj: 5, projection: project_puzzle_2 }
+    GameOfSeatsIterator {
+        gos: Some(start),
+        too_many_adj: 5,
+        projection: |gos, d, p| {
+            let mut p = p;
+            loop {
+                p.update(d);
+                if !gos.within_outer_ring(p) || gos.seat(p) != FLOOR {
+                    return p;
+                }
+            }
+        },
+    }
 }
 
 #[derive(Clone)]
