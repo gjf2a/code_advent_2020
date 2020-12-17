@@ -203,7 +203,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // It works, but it takes about 50 seconds on my laptop
+    #[ignore]
+    // It works, but it takes about 50 seconds on my laptop.
+    // I ran the unit tests from the console with optimizations on, and this test took about 2.45 seconds.
+    // The fully optimized executable takes about 6 seconds on the main problem input.
     fn test_puzzle_2() {
         let cubes = ConwayCubes::from("in/day17_ex.txt", 4).unwrap();
         assert_eq!(after_n_cycles(cubes, 6), 848);
