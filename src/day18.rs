@@ -1,4 +1,10 @@
 use std::str::Chars;
+use std::io;
+use advent_code_lib::all_lines;
+
+pub fn solve_1(filename: &str) -> io::Result<String> {
+    Ok(all_lines(filename)?.map(|line| eval(line.as_str())).sum::<usize>().to_string())
+}
 
 pub fn eval(line: &str) -> usize {
     eval_chars(&mut line.chars())
