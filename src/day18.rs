@@ -10,48 +10,6 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
 pub fn solve_2(filename: &str) -> io::Result<String> {
     Ok(all_lines(filename)?.map(|line| eval_2(line.as_str())).sum::<usize>().to_string())
 }
-/*
-struct Evaluator {
-    total: usize,
-    last_op: char,
-    done: bool,
-    mul_func:
-}
-
-impl Evaluator {
-    pub fn eval<T:Iterator<Item=char>>(chars: &mut T) -> usize {
-        let mut eval = Evaluator { total: 0, last_op: '+', done: false };
-        while !eval.done {
-            eval.update(chars);
-        }
-        eval.total
-    }
-
-    pub fn update_total(&mut self, value: usize) {
-        self.total = op(self.total, self.last_op, value);
-    }
-
-    pub fn update<T:Iterator<Item=char>>(&mut self, chars: &mut T) {
-        let c = chars.next();
-        if let Some(c) = c {
-            match c {
-                '*' | '+' => self.last_op = c,
-                '0'..='9' => self.update_total(parse_digit(c)),
-                ' ' => {},
-                '(' => self.update_total(Evaluator::eval(chars)),
-                ')' => {self.done = true},
-                _ => panic!("Unrecognized input character: '{}'", c)
-            }
-        } else {
-            self.done = true;
-        }
-    }
-}
-
-pub fn eval_1(line: &str) -> usize {
-    Evaluator::eval(&mut line.chars())
-}
-*/
 
 pub enum Puzzle {
     One, Two
@@ -92,56 +50,6 @@ impl <I:Iterator<Item=char>> Evaluator<I> {
 pub fn eval_1(line: &str) -> usize {
     Evaluator {chars: line.chars().filter(|c| *c != ' '), puzzle: Puzzle::One}.eval()
 }
-/*
-pub fn eval<I:Iterator<Item=char>,F:Fn(&mut I, &F)->usize>(chars: &mut I, mult_next: &F) -> usize {
-    //let mut chars = chars.filter(|c| *c != ' '); // Killed the compiler
-    let mut total = grab_next_value(chars, &mult_next);
-    loop {
-        if let Some(c) = chars.next() {
-            total = match c {
-                '+' => total + grab_next_value(chars, mult_next),
-                '*' => total * mult_next(chars, mult_next),
-                ')' => return total,
-                _ => grab_next_value(chars, mult_next)
-            }
-        } else {
-            return total;
-        }
-    }
-}
-
-pub fn grab_next_value<I:Iterator<Item=char>,F:Fn(&mut I, F)->usize>(chars: &mut I, mult_next: &F) -> usize {
-    let c = chars.next().unwrap();
-    match c {
-        '0'..='9' => parse_digit(c),
-        '(' => eval(chars, &mult_next),
-        _ => panic!("Unrecognized char: '{}'", c)
-    }
-}
-*/
-/*pub fn eval_1(line: &str) -> usize {
-    eval_chars_1(&mut line.chars())
-}*/
-
-pub fn eval_chars_1(chars: &mut Chars) -> usize {
-    let mut total = 0;
-    let mut last_op = '+';
-    loop {
-        let c = chars.next();
-        if let Some(c) = c {
-            match c {
-                '*' | '+' => last_op = c,
-                '0'..='9' => total = op(total, last_op, parse_digit(c)),
-                ' ' => {},
-                '(' => total = op(total, last_op, eval_chars_1(chars)),
-                ')' => return total,
-                _ => panic!("Unrecognized input character: '{}'", c)
-            }
-        } else {
-            return total;
-        }
-    }
-}
 
 pub fn eval_2(line: &str) -> usize {
     eval_chars_2(&mut line.chars().rev())
@@ -168,14 +76,6 @@ fn eval_chars_2(chars: &mut Rev<Chars>) -> usize {
 
 fn parse_digit(digit: char) -> usize {
     digit as usize - '0' as usize
-}
-
-fn op(total: usize, op: char, num: usize) -> usize {
-    match op {
-        '+' => total + num,
-        '*' => total * num,
-        _ => panic!("Unrecognized operator: '{}'", op)
-    }
 }
 
 #[cfg(test)]
