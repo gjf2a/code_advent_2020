@@ -2,8 +2,18 @@ use std::io;
 use advent_code_lib::all_lines;
 use core::iter::Peekable;
 
+pub fn solve_1(filename: &str) -> io::Result<String> {
+    solve(filename, Puzzle::One)
+}
+
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    solve(filename, Puzzle::Two)
+}
+
 pub fn solve(filename: &str, puzzle: Puzzle) -> io::Result<String> {
-    Ok(all_lines(filename)?.map(|line| Evaluator::new(line.chars(), puzzle).eval()).sum::<usize>().to_string())
+    Ok(all_lines(filename)?
+        .map(|line| Evaluator::new(line.chars(), puzzle).eval())
+        .sum::<usize>().to_string())
 }
 
 #[derive(Copy,Clone,Debug)]
@@ -42,24 +52,18 @@ impl <I:Iterator<Item=char>> Evaluator<I> {
         let c = self.chars.next().unwrap();
         match c {
             '0'..='9' => parse_digit(c),
-            '(' => {
-                let result = self.eval();
-                let next = self.chars.next().unwrap();
-                assert_eq!(next, ')');
-                result
-            },
+            '(' => self.parse_check_paren(),
             ' ' => self.grab_next_value(),
             _ => panic!("Unrecognized char: '{}'", c)
         }
     }
-}
 
-pub fn eval_1(line: &str) -> usize {
-    Evaluator::new(line.chars(), Puzzle::One).eval()
-}
-
-pub fn eval_2(line: &str) -> usize {
-    Evaluator::new(line.chars(), Puzzle::Two).eval()
+    fn parse_check_paren(&mut self) -> usize {
+        let result = self.eval();
+        let next = self.chars.next().unwrap();
+        assert_eq!(next, ')');
+        result
+    }
 }
 
 fn parse_digit(digit: char) -> usize {
@@ -80,7 +84,7 @@ mod tests {
             ("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 12240),
             ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 13632)
         ] {
-            assert_eq!(eval_1(line), *target);
+            assert_eq!(Evaluator::new(line.chars(), Puzzle::One).eval(), *target);
         }
     }
 
@@ -103,8 +107,7 @@ mod tests {
             ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4", 11670),
             ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 23340)
         ] {
-            println!("evaluating {}; target {}", line, target);
-            assert_eq!(eval_2(line), *target);
+            assert_eq!(Evaluator::new(line.chars(), Puzzle::Two).eval(), *target);
         }
     }
 }
