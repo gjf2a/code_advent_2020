@@ -37,19 +37,20 @@ impl <I:Iterator<Item=char>> Evaluator<I> {
 
     pub fn eval(&mut self) -> usize {
         let mut total = self.grab_next_value();
-        loop {
-            let peeked = self.chars.peek();
-            if peeked == None || *(peeked.unwrap()) == ')' {
-                return total;
-            } else {
-                total = match self.chars.next().unwrap() {
-                    '+' => total + self.grab_next_value(),
-                    '*' => total * (self.puzzle)(self),
-                    ' ' => total,
-                    _ => panic!("This shouldn't happen")
-                };
-            }
+        while !self.at_expr_end() {
+            total = match self.chars.next().unwrap() {
+                '+' => total + self.grab_next_value(),
+                '*' => total * (self.puzzle)(self),
+                ' ' => total,
+                _ => panic!("This shouldn't happen")
+            };
         }
+        total
+    }
+
+    pub fn at_expr_end(&mut self) -> bool {
+        let peeked = self.chars.peek();
+        peeked == None || *(peeked.unwrap()) == ')'
     }
 
     pub fn grab_next_value(&mut self) -> usize {
