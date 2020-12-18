@@ -1,33 +1,37 @@
 use std::io;
 use advent_code_lib::all_lines;
 use core::iter::Peekable;
+use std::str::Chars;
+
+fn puzzle_1(line: &str) -> Evaluator<Chars> {
+    Evaluator::new(line.chars(), |eval| eval.grab_next_value())
+}
+
+fn puzzle_2(line: &str) -> Evaluator<Chars> {
+    Evaluator::new(line.chars(), |eval| eval.eval())
+}
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    solve(filename, Puzzle::One)
+    solve(filename, puzzle_1)
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    solve(filename, Puzzle::Two)
+    solve(filename, puzzle_2)
 }
 
-pub fn solve(filename: &str, puzzle: Puzzle) -> io::Result<String> {
+pub fn solve(filename: &str, puzzle: fn(&str)->Evaluator<Chars>) -> io::Result<String> {
     Ok(all_lines(filename)?
-        .map(|line| Evaluator::new(line.chars(), puzzle).eval())
+        .map(|line| puzzle(line.as_str()).eval())
         .sum::<usize>().to_string())
-}
-
-#[derive(Copy,Clone,Debug)]
-pub enum Puzzle {
-    One, Two
 }
 
 pub struct Evaluator<I:Iterator<Item=char>> {
     chars: Peekable<I>,
-    puzzle: Puzzle
+    puzzle: fn(&mut Evaluator<I>) -> usize
 }
 
 impl <I:Iterator<Item=char>> Evaluator<I> {
-    pub fn new(chars: I, puzzle: Puzzle) -> Evaluator<I> {
+    pub fn new(chars: I, puzzle: fn(&mut Evaluator<I>) -> usize) -> Evaluator<I> {
         Evaluator {chars: chars.peekable(), puzzle}
     }
 
@@ -40,7 +44,7 @@ impl <I:Iterator<Item=char>> Evaluator<I> {
             } else {
                 total = match self.chars.next().unwrap() {
                     '+' => total + self.grab_next_value(),
-                    '*' => total * match self.puzzle {Puzzle::One => self.grab_next_value(), Puzzle::Two => self.eval()},
+                    '*' => total * (self.puzzle)(self),
                     ' ' => total,
                     _ => panic!("This shouldn't happen")
                 };
@@ -84,7 +88,7 @@ mod tests {
             ("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 12240),
             ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 13632)
         ] {
-            assert_eq!(Evaluator::new(line.chars(), Puzzle::One).eval(), *target);
+            assert_eq!(puzzle_1(line).eval(), *target);
         }
     }
 
@@ -107,7 +111,7 @@ mod tests {
             ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4", 11670),
             ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 23340)
         ] {
-            assert_eq!(Evaluator::new(line.chars(), Puzzle::Two).eval(), *target);
+            assert_eq!(puzzle_2(line).eval(), *target);
         }
     }
 }

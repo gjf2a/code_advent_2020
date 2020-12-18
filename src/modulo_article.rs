@@ -1,3 +1,7 @@
+// All of this code follows the examples given at:
+// https://byorgey.wordpress.com/2020/02/15/competitive-programming-in-haskell-modular-arithmetic-part-1/
+// https://byorgey.wordpress.com/2020/03/03/competitive-programming-in-haskell-modular-arithmetic-part-2/
+
 pub fn modular_exponentiation_1(b: u64, e: u32, m: u64) -> u64 {
     if e == 0 {
         1
