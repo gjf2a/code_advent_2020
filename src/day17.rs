@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::io;
 use advent_code_lib::for_each_line;
+use smallvec::SmallVec;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(after_n_cycles(ConwayCubes::from(filename, 3)?, 6).to_string())
@@ -68,12 +69,12 @@ impl ConwayCubes {
 
 #[derive(Clone,Eq,PartialEq,Debug,Ord,PartialOrd)]
 pub struct PointND {
-    coords: Vec<isize>
+    coords: SmallVec<[isize; 4]>
 }
 
 impl PointND {
     pub fn new(coords: &[isize]) -> PointND {
-        PointND { coords: Vec::from(coords) }
+        PointND { coords: SmallVec::from(coords) }
     }
 
     pub fn new_zero_pad(coords: &[isize], target_len: usize) -> PointND {
@@ -84,12 +85,16 @@ impl PointND {
         result
     }
 
+    pub fn add_to_all(&self, value: isize) -> PointND {
+        PointND { coords: self.coords.iter().map(|c| c + value).collect()}
+    }
+
     pub fn prev_corner(&self) -> PointND {
-        PointND { coords: self.coords.iter().map(|c| c - 1).collect()}
+        self.add_to_all(-1)
     }
 
     pub fn next_corner(&self) -> PointND {
-        PointND { coords: self.coords.iter().map(|c| c + 1).collect()}
+        self.add_to_all(1)
     }
 
     pub fn next(&self, start: &PointND, end: &PointND) -> Option<PointND> {
@@ -200,10 +205,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
-    // It works, but it takes about 50 seconds on my laptop.
-    // I ran the unit tests from the console with optimizations on, and this test took about 2.45 seconds.
-    // The fully optimized executable takes about 6 seconds on the main problem input.
+    // Only run this unit test in release; it takes 48 seconds in debug on this laptop.
     fn test_puzzle_2() {
         let cubes = ConwayCubes::from("in/day17_ex.txt", 4).unwrap();
         assert_eq!(after_n_cycles(cubes, 6), 848);
