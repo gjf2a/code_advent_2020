@@ -1,38 +1,39 @@
-use std::str::Chars;
 use std::io;
 use advent_code_lib::all_lines;
-use std::iter::Rev;
+use core::iter::Peekable;
 
-pub fn solve_1(filename: &str) -> io::Result<String> {
-    Ok(all_lines(filename)?.map(|line| eval_1(line.as_str())).sum::<usize>().to_string())
+pub fn solve(filename: &str, puzzle: Puzzle) -> io::Result<String> {
+    Ok(all_lines(filename)?.map(|line| Evaluator::new(line.chars(), puzzle).eval()).sum::<usize>().to_string())
 }
 
-pub fn solve_2(filename: &str) -> io::Result<String> {
-    Ok(all_lines(filename)?.map(|line| eval_2(line.as_str())).sum::<usize>().to_string())
-}
-
+#[derive(Copy,Clone,Debug)]
 pub enum Puzzle {
     One, Two
 }
 
-pub struct Evaluator<I> {
-    chars: I,
+pub struct Evaluator<I:Iterator<Item=char>> {
+    chars: Peekable<I>,
     puzzle: Puzzle
 }
 
 impl <I:Iterator<Item=char>> Evaluator<I> {
+    pub fn new(chars: I, puzzle: Puzzle) -> Evaluator<I> {
+        Evaluator {chars: chars.peekable(), puzzle}
+    }
+
     pub fn eval(&mut self) -> usize {
         let mut total = self.grab_next_value();
         loop {
-            if let Some(c) = self.chars.next() {
-                total = match c {
+            let peeked = self.chars.peek();
+            if peeked == None || *(peeked.unwrap()) == ')' {
+                return total;
+            } else {
+                total = match self.chars.next().unwrap() {
                     '+' => total + self.grab_next_value(),
                     '*' => total * match self.puzzle {Puzzle::One => self.grab_next_value(), Puzzle::Two => self.eval()},
-                    ')' => return total,
-                    _ => self.grab_next_value()
-                }
-            } else {
-                return total;
+                    ' ' => total,
+                    _ => panic!("This shouldn't happen")
+                };
             }
         }
     }
@@ -41,37 +42,24 @@ impl <I:Iterator<Item=char>> Evaluator<I> {
         let c = self.chars.next().unwrap();
         match c {
             '0'..='9' => parse_digit(c),
-            '(' => self.eval(),
+            '(' => {
+                let result = self.eval();
+                let next = self.chars.next().unwrap();
+                assert_eq!(next, ')');
+                result
+            },
+            ' ' => self.grab_next_value(),
             _ => panic!("Unrecognized char: '{}'", c)
         }
     }
 }
 
 pub fn eval_1(line: &str) -> usize {
-    Evaluator {chars: line.chars().filter(|c| *c != ' '), puzzle: Puzzle::One}.eval()
+    Evaluator::new(line.chars(), Puzzle::One).eval()
 }
 
 pub fn eval_2(line: &str) -> usize {
-    eval_chars_2(&mut line.chars().rev())
-}
-
-fn eval_chars_2(chars: &mut Rev<Chars>) -> usize {
-    let mut last_val = 1;
-    loop {
-        let c = chars.next();
-        if let Some(c) = c {
-            match c {
-                '0'..='9' => last_val = parse_digit(c) * last_val,
-                '(' => last_val = eval_chars_2(chars),
-                ' ' | '*' => {},
-                '+' => last_val = last_val + eval_chars_2(chars),
-                ')' => return last_val,
-                _ => panic!("Unrecognized input character: '{}'", c)
-            }
-        } else {
-            return last_val;
-        }
-    }
+    Evaluator::new(line.chars(), Puzzle::Two).eval()
 }
 
 fn parse_digit(digit: char) -> usize {
@@ -99,13 +87,23 @@ mod tests {
     #[test]
     fn test_eval_2() {
         for (line, target) in &[
+            ("(5 * 2 + (3 * 2)) + 2", 42),
             ("1 + 2 * 3 + 4 * 5 + 6", 231),
             ("1 + (2 * 3) + (4 * (5 + 6))", 51),
             ("2 * 3 + (4 * 5)", 46),
             ("5 + (8 * 3 + 9 + 3 * 4 * 3)", 1445),
             ("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 669060),
+            ("2 + 4 * 9", 54),
+            ("6 + 9 * 8 + 6", 210),
+            ("(2 + 4 * 9) * (6 + 9 * 8 + 6) + 6", 11664),
+            ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6)", 11664),
+            ("(5 * 2 + 6) + 2", 42),
+            ("(5 * 2 + (3 * 2))", 40),
+            ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2", 11666),
+            ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4", 11670),
             ("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 23340)
         ] {
+            println!("evaluating {}; target {}", line, target);
             assert_eq!(eval_2(line), *target);
         }
     }

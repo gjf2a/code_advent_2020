@@ -22,6 +22,7 @@ pub mod modulo_article;
 pub mod day18;
 
 use std::{env,io};
+use crate::day18::Puzzle;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -62,7 +63,8 @@ fn main() -> io::Result<()> {
             "16_2" => day16::solve_2("in/day16.txt")?,
             "17_1" => day17::solve_1("in/day17.txt")?,
             "17_2" => day17::solve_2("in/day17.txt")?,
-            "18_1" => day18::solve_1("in/day18.txt")?,
+            "18_1" => day18::solve("in/day18.txt", Puzzle::One)?,
+            "18_2" => day18::solve("in/day18.txt", Puzzle::Two)?,
             _ => "Unrecognized problem".to_string()
         }
     });
