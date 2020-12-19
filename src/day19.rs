@@ -94,7 +94,8 @@ enum Status {
 
 fn or(s1: Status, s2: Status) -> Status {
     match (s1, s2) {
-        (Status::Yes(set1), Status::Yes(set2)) => Status::Yes(set1.union(&set2).map(|x| *x).collect()),
+        (Status::Yes(set1), Status::Yes(set2)) =>
+            Status::Yes(set1.union(&set2).map(|x| *x).collect()),
         (Status::Yes(set), _) | (_, Status::Yes(set)) => Status::Yes(set.clone()),
         (Status::Pending, _) | (_, Status::Pending) => Status::Pending,
         _ => Status::No
@@ -117,7 +118,11 @@ impl Display for ParseTable {
 
 impl ParseTable {
     fn from(rules: &Rules, line: &str) -> ParseTable {
-        let mut table = ParseTable {status: (0..line.len()).map(|_| rules.all_rule_nums().map(|n| (*n, Status::Pending)).collect()).collect()};
+        let mut table = ParseTable {status: (0..line.len())
+            .map(|_| rules.all_rule_nums()
+                .map(|n| (*n, Status::Pending))
+                .collect())
+            .collect()};
         let line_bytes = line.as_bytes();
         for i in (0..line_bytes.len()).rev() {
             table.resolve_all(rules, line_bytes[i], i);
@@ -142,21 +147,33 @@ impl ParseTable {
 
     fn resolve_all(&mut self, rules: &Rules, c: u8, i: usize) {
         loop {
-            let updates: Vec<(usize, Status)> = self.status[i].iter()
-                .filter(|(_, v)| v == &&Status::Pending)
-                .map(|(r, _)| (*r, self.get_new_status(rules.rule(*r), c, i)))
-                .collect();
-            let changed = updates.len() > 0;
-            for (r, status) in updates {
-                self.status[i].insert(r, status);
-            }
-            if !changed {
-                for (_, r_status) in self.status[i].iter_mut() {
-                    if *r_status == Status::Pending {
-                        *r_status = Status::No;
-                    }
-                }
+            let updates = self.all_status_updates(rules, i, c);
+            let has_updates = updates.len() > 0;
+            self.apply_status_updates(i, updates);
+            if !has_updates {
+                self.convert_pending_to_no(i);
                 return;
+            }
+        }
+    }
+
+    fn all_status_updates(&self, rules: &Rules, i: usize, c: u8) -> Vec<(usize, Status)> {
+        self.status[i].iter()
+            .filter(|(_, v)| v == &&Status::Pending)
+            .map(|(r, _)| (*r, self.get_new_status(rules.rule(*r), c, i)))
+            .collect()
+    }
+
+    fn apply_status_updates(&mut self, i: usize, updates: Vec<(usize, Status)>) {
+        for (r, status) in updates {
+            self.status[i].insert(r, status);
+        }
+    }
+
+    fn convert_pending_to_no(&mut self, i: usize) {
+        for (_, r_status) in self.status[i].iter_mut() {
+            if *r_status == Status::Pending {
+                *r_status = Status::No;
             }
         }
     }
@@ -177,17 +194,21 @@ impl ParseTable {
     fn subrule_stage(&self, subs: &SmallVec<[usize;3]>, subrule: usize, i: usize) -> Status {
         match self.status(i, subs[subrule]) {
             Status::Yes(offsets) => if subrule + 1 < subs.len() {
-                offsets.iter()
-                    .map(|off| match self.subrule_stage(subs, subrule + 1, i + off) {
-                        Status::Yes(future_offsets) => Status::Yes(future_offsets.iter().map(|fut| fut + off).collect()),
-                        x => x
-                    })
-                    .fold_first(|acc, val| or(acc, val)).unwrap()
+                self.try_successors(offsets, subs, subrule + 1, i)
             } else {
                 Status::Yes(offsets)
             },
             x => x
         }
+    }
+
+    fn try_successors(&self, current_offsets: BTreeSet<usize>, subs: &SmallVec<[usize;3]>, successor_subrule: usize, i: usize) -> Status {
+        current_offsets.iter()
+            .map(|off| match self.subrule_stage(subs, successor_subrule, i + off) {
+                Status::Yes(future_offsets) => Status::Yes(future_offsets.iter().map(|fut| fut + off).collect()),
+                other => other
+            })
+            .fold_first(|acc, val| or(acc, val)).unwrap()
     }
 }
 
