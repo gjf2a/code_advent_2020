@@ -92,22 +92,6 @@ enum Status {
     Yes(BTreeSet<usize>), No, Pending
 }
 
-fn and(s1: Status, s2: Status) -> Status {
-    match (s1, s2) {
-        (Status::Yes(set1), Status::Yes(set2)) => Status::Yes({
-            let mut result = BTreeSet::new();
-            for len1 in set1.iter() {
-                for len2 in set2.iter() {
-                    result.insert(len1 + len2);
-                }
-            }
-            result
-        }),
-        (Status::No, _) | (_, Status::No) => Status::No,
-        _ => Status::Pending,
-    }
-}
-
 fn or(s1: Status, s2: Status) -> Status {
     match (s1, s2) {
         (Status::Yes(set1), Status::Yes(set2)) => Status::Yes(set1.union(&set2).map(|x| *x).collect()),
@@ -148,19 +132,12 @@ impl ParseTable {
         }
     }
 
-    fn match_at_with(&self, at: usize, with: usize) -> bool {
-        self.status[at].iter()
-            .any(|(_, v)| match v {Status::Yes(n) => n.contains(&with), _ => false})
-    }
-
     fn full_match(&self) -> bool {
         self.matches_rule_at(0, 0)
     }
 
     fn matches(rules: &Rules, line: &str) -> bool {
-        let table = ParseTable::from(rules, line);
-        //println!("{:?}", table);
-        table.full_match()
+        ParseTable::from(rules, line).full_match()
     }
 
     fn resolve_all(&mut self, rules: &Rules, c: u8, i: usize) {
@@ -237,10 +214,7 @@ mod tests {
     fn test_row_1() {
         let rules = Rules::from("in/day19_ex.txt", rule_line).unwrap().0;
         let table = ParseTable::from(&rules, "ababbb");
-        println!("{:?}", table);
-        assert!(table.match_at_with(4, 2));
-        assert!(table.match_at_with(1, 4));
-        assert!(table.match_at_with(0, 6));
+        assert!(table.full_match());
     }
 
     #[test]
