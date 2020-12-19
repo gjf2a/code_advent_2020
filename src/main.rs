@@ -1,4 +1,5 @@
 #![feature(map_first_last)]
+#![feature(iterator_fold_self)]
 #[macro_use] extern crate maplit;
 
 pub mod day1;
@@ -20,6 +21,7 @@ pub mod day16;
 pub mod day17;
 pub mod modulo_article;
 pub mod day18;
+pub mod day19;
 
 use std::{env,io};
 
@@ -64,6 +66,7 @@ fn main() -> io::Result<()> {
             "17_2" => day17::solve_2("in/day17.txt")?,
             "18_1" => day18::solve_1("in/day18.txt")?,
             "18_2" => day18::solve_2("in/day18.txt")?,
+            "19_1" => day19::solve_1("in/day19.txt")?,
             _ => "Unrecognized problem".to_string()
         }
     });
