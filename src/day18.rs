@@ -4,11 +4,11 @@ use core::iter::Peekable;
 use std::str::Chars;
 
 fn puzzle_1(line: &str) -> Evaluator<Chars> {
-    Evaluator::new(line.chars(), |eval| eval.grab_next_value())
+    Evaluator::new(line.chars(), Evaluator::grab_next_value)
 }
 
 fn puzzle_2(line: &str) -> Evaluator<Chars> {
-    Evaluator::new(line.chars(), |eval| eval.eval())
+    Evaluator::new(line.chars(), Evaluator::eval)
 }
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
