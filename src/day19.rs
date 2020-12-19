@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 use smallvec::SmallVec;
-use std::io;
+use std::{io, fmt};
 use advent_code_lib::all_lines;
 use std::collections::btree_map::Keys;
+use std::fmt::Display;
+use smallvec::alloc::fmt::Formatter;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(Rules::puzzle1(filename)?.to_string())
@@ -120,6 +122,15 @@ struct ParseTable {
     status: Vec<BTreeMap<usize,Status>>
 }
 
+impl Display for ParseTable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for line in self.status.iter() {
+            writeln!(f, "{:?}", line).unwrap();
+        }
+        Ok(())
+    }
+}
+
 impl ParseTable {
     fn from(rules: &Rules, line: &str) -> ParseTable {
         let mut table = ParseTable {status: (0..line.len()).map(|_| rules.all_rule_nums().map(|n| (*n, Status::Pending)).collect()).collect()};
@@ -130,15 +141,26 @@ impl ParseTable {
         table
     }
 
+    fn matches_rule_at(&self, rule: usize, at: usize) -> bool {
+        match self.status[at].get(&rule).unwrap() {
+            Status::Yes(matches) => matches.contains(&self.status.len()),
+            _ => false
+        }
+    }
+
     fn match_at_with(&self, at: usize, with: usize) -> bool {
         self.status[at].iter()
             .any(|(_, v)| match v {Status::Yes(n) => n.contains(&with), _ => false})
     }
 
+    fn full_match(&self) -> bool {
+        self.matches_rule_at(0, 0)
+    }
+
     fn matches(rules: &Rules, line: &str) -> bool {
         let table = ParseTable::from(rules, line);
-        println!("{:?}", table);
-        table.match_at_with(0, line.len())
+        //println!("{:?}", table);
+        table.full_match()
     }
 
     fn resolve_all(&mut self, rules: &Rules, c: u8, i: usize) {
@@ -167,15 +189,12 @@ impl ParseTable {
     }
 
     fn get_new_status(&self, rule: &Rule, c: u8, i: usize) -> Status {
-        //println!("get_new_status({:?}, {}, {}", rule, c as char, i);
-        let r = match rule {
+        match rule {
             Rule::Char(rc) => if c as char == *rc {Status::Yes(btreeset! {1})} else {Status::No},
             Rule::Subrules(subs) => self.subrule_stage(subs, 0, i),
             Rule::Alt(r1, r2) =>
                 or(self.get_new_status(&r1, c, i), self.get_new_status(&r2, c, i))
-        };
-        //println!("Returning {:?}", r);
-        r
+        }
     }
 
     fn subrule_stage(&self, subs: &SmallVec<[usize;3]>, subrule: usize, i: usize) -> Status {
@@ -226,7 +245,32 @@ mod tests {
 
     #[test]
     fn test_rows_2() {
-
+        let (rules,_) = Rules::from("in/day19_ex2.txt", puzzle_2_rule_line).unwrap();
+        [
+            ("abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa", false),
+            ("bbabbbbaabaabba", true),
+            ("babbbbaabbbbbabbbbbbaabaaabaaa", true),
+            ("aaabbbbbbaaaabaababaabababbabaaabbababababaaa", true),
+            ("bbbbbbbaaaabbbbaaabbabaaa", true),
+            ("bbbababbbbaaaaaaaabbababaaababaabab", true),
+            ("ababaaaaaabaaab", true),
+            ("ababaaaaabbbaba", true),
+            ("baabbaaaabbaaaababbaababb", true),
+            ("abbbbabbbbaaaababbbbbbaaaababb", true),
+            ("aaaaabbaabaaaaababaa", true),
+            ("aaaabbaaaabbaaa", false),
+            ("aaaabbaabbaaaaaaabbbabbbaaabbaabaaa", true),
+            ("babaaabbbaaabaababbaabababaaab", false),
+            ("aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba", true)
+        ].iter().for_each(|(msg, goal)| {
+            println!("Testing '{}'", msg);
+            //assert_eq!(ParseTable::matches(&rules, msg), *goal);
+            let table = ParseTable::from(&rules, msg);
+            println!("Expected: {} actual: {}", goal, table.full_match());
+            if table.full_match() != *goal {
+                println!("Failed; table:\n{}", table);
+            }
+        });
     }
 
     #[test]
