@@ -167,23 +167,31 @@ impl ParseTable {
     }
 
     fn get_new_status(&self, rule: &Rule, c: u8, i: usize) -> Status {
-        println!("get_new_status({:?}, {}, {}", rule, c as char, i);
+        //println!("get_new_status({:?}, {}, {}", rule, c as char, i);
         let r = match rule {
             Rule::Char(rc) => if c as char == *rc {Status::Yes(btreeset! {1})} else {Status::No},
-            Rule::Subrules(subs) => self.subrule(subs, i),
+            Rule::Subrules(subs) => self.subrule_stage(subs, 0, i),
             Rule::Alt(r1, r2) =>
                 or(self.get_new_status(&r1, c, i), self.get_new_status(&r2, c, i))
         };
-        println!("Returning {:?}", r);
+        //println!("Returning {:?}", r);
         r
     }
 
-    fn subrule(&self, subs: &SmallVec<[usize;3]>, i: usize) -> Status {
-        subs.iter().enumerate()
-            .inspect(|(offset, subrule)| print!("offset: {} subrule: {}", offset, subrule))
-            .map(|(offset, subrule)| self.status(i+offset, *subrule))
-            .inspect(|s| println!(" status: {:?}", s))
-            .fold_first(|acc, val| and(acc, val)).unwrap()
+    fn subrule_stage(&self, subs: &SmallVec<[usize;3]>, subrule: usize, i: usize) -> Status {
+        match self.status(i, subs[subrule]) {
+            Status::Yes(offsets) => if subrule + 1 < subs.len() {
+                offsets.iter()
+                    .map(|off| match self.subrule_stage(subs, subrule + 1, i + off) {
+                        Status::Yes(future_offsets) => Status::Yes(future_offsets.iter().map(|fut| fut + off).collect()),
+                        x => x
+                    })
+                    .fold_first(|acc, val| or(acc, val)).unwrap()
+            } else {
+                Status::Yes(offsets)
+            },
+            x => x
+        }
     }
 }
 
@@ -212,7 +220,13 @@ mod tests {
         let table = ParseTable::from(&rules, "ababbb");
         println!("{:?}", table);
         assert!(table.match_at_with(4, 2));
+        assert!(table.match_at_with(1, 4));
         assert!(table.match_at_with(0, 6));
+    }
+
+    #[test]
+    fn test_rows_2() {
+
     }
 
     #[test]
