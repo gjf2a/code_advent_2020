@@ -67,13 +67,6 @@ impl Rules {
         self.rules.keys()
     }
 
-    /*
-    fn puzzle<F:Fn(&str)->(usize,Rule)>(filename: &str, rule_liner: F) -> io::Result<usize> {
-        let (rules, lines) = Rules::from(filename, rule_liner)?;
-        Ok(lines.filter(|line| rules.line_matcher(line.as_str())).count())
-    }
-     */
-
     fn puzzle<F:Fn(&str)->(usize,Rule)>(filename: &str, rule_liner: F) -> io::Result<usize> {
         let (rules, lines) = Rules::from(filename, rule_liner)?;
         Ok(lines.filter(|line| ParseTable::matches(&rules, line.as_str())).count())
@@ -90,34 +83,6 @@ impl Rules {
     fn rule(&self, ri: usize) -> &Rule {
         self.rules.get(&ri).unwrap()
     }
-/*
-    pub fn line_matcher(&self, line: &str) -> bool {
-        self.subline_matcher(self.rule(0), line.as_bytes(), 0)
-            .map_or(false, |pos| pos == line.len())
-    }
-
-    pub fn subline_matcher(&self, r: &Rule, line: &[u8], pos: usize) -> Option<usize> {
-        if pos < line.len() {
-            match r {
-                Rule::Char(c) => if *c == line[pos] as char { Some(pos + 1) } else { None },
-                Rule::Alt(r1, r2) => self.subline_matcher(r1, line, pos).or(self.subline_matcher(r2, line, pos)),
-                Rule::Subrules(subs) => self.process_subrules(subs, line, pos),
-                Rule::Eight => self.eight_matcher(line, pos),
-                Rule::Eleven => self.eleven_matcher(line, pos)
-            }
-        } else {
-            None
-        }
-    }
-
-    fn process_subrules(&self, subs: &SmallVec<[usize; 3]>, line: &[u8], pos: usize) -> Option<usize> {
-        let mut result = self.subline_matcher(self.rule(subs[0]), line, pos);
-        for i in 1..subs.len() {
-            result = result.and_then(|pos| self.subline_matcher(self.rule(subs[i]), line, pos));
-        }
-        result
-    }
-*/
 }
 
 #[derive(Clone,Eq,PartialEq,Debug)]
@@ -144,8 +109,7 @@ fn and(s1: Status, s2: Status) -> Status {
 fn or(s1: Status, s2: Status) -> Status {
     match (s1, s2) {
         (Status::Yes(set1), Status::Yes(set2)) => Status::Yes(set1.union(&set2).map(|x| *x).collect()),
-        (Status::Yes(set), Status::Pending)
-        | (Status::Pending, Status::Yes(set)) => Status::Yes(set.clone()),
+        (Status::Yes(set), _) | (_, Status::Yes(set)) => Status::Yes(set.clone()),
         (Status::Pending, _) | (_, Status::Pending) => Status::Pending,
         _ => Status::No
     }
@@ -203,21 +167,26 @@ impl ParseTable {
     }
 
     fn get_new_status(&self, rule: &Rule, c: u8, i: usize) -> Status {
-        match rule {
+        println!("get_new_status({:?}, {}, {}", rule, c as char, i);
+        let r = match rule {
             Rule::Char(rc) => if c as char == *rc {Status::Yes(btreeset! {1})} else {Status::No},
-            Rule::Subrules(subs) => subs.iter().enumerate()
-                .map(|(offset, subrule)| self.status(i+offset, *subrule))
-                .fold_first(|acc, val| and(acc, val)).unwrap(),
+            Rule::Subrules(subs) => self.subrule(subs, i),
             Rule::Alt(r1, r2) =>
                 or(self.get_new_status(&r1, c, i), self.get_new_status(&r2, c, i))
-        }
+        };
+        println!("Returning {:?}", r);
+        r
+    }
+
+    fn subrule(&self, subs: &SmallVec<[usize;3]>, i: usize) -> Status {
+        subs.iter().enumerate()
+            .inspect(|(offset, subrule)| print!("offset: {} subrule: {}", offset, subrule))
+            .map(|(offset, subrule)| self.status(i+offset, *subrule))
+            .inspect(|s| println!(" status: {:?}", s))
+            .fold_first(|acc, val| and(acc, val)).unwrap()
     }
 }
-/*
-fn line_printer(msg: &str, line: &[u8], pos: usize) {
-    println!("{} on {:?}", msg, &line[pos..].iter().map(|b| *b as char).collect::<String>());
-}
-*/
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -237,22 +206,17 @@ mod tests {
         assert_eq!(Rules::puzzle2("in/day19_ex2.txt").unwrap(), 12);
     }
 
-    /*
     #[test]
-    fn debug_11_1() {
-        let rules = Rules::from("in/day19_ex2.txt", rule_line).unwrap().0;
-        assert_ne!(rules.subline_matcher(rules.rule(0), "bbabbbbaabaabba".as_bytes(), 0), None);
-        assert_ne!(rules.subline_matcher(rules.rule(11), "bbabbbbaabaabba".as_bytes(), 5), None);
+    fn test_row_1() {
+        let rules = Rules::from("in/day19_ex.txt", rule_line).unwrap().0;
+        let table = ParseTable::from(&rules, "ababbb");
+        println!("{:?}", table);
+        assert!(table.match_at_with(4, 2));
+        assert!(table.match_at_with(0, 6));
     }
 
     #[test]
-    fn debug_11_2() {
-        let rules = Rules::from("in/day19_ex2.txt", puzzle_2_rule_line).unwrap().0;
-        let after_8 = rules.eight_matcher("bbabbbbaabaabba".as_bytes(), 0);
-        println!("after_8: {:?}", after_8);
-        assert_ne!(after_8, None);
-        assert_ne!(rules.subline_matcher(rules.rule(11), "bbabbbbaabaabba".as_bytes(), after_8.unwrap()), None);
+    fn test_or() {
+        assert_eq!(or(Status::Yes(btreeset! {2}), Status::No), Status::Yes(btreeset! {2}));
     }
-
-     */
 }
