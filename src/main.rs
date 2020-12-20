@@ -24,9 +24,11 @@ pub mod day18;
 pub mod day19;
 
 use std::{env,io};
+use std::time::Instant;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
+    let now = Instant::now();
     println!("{}", match args.get(1) {
         None => "Usage: code_advent_2020 puzzle_num [other_args]*".to_string(),
         Some(arg) => match arg.as_str() {
@@ -71,5 +73,6 @@ fn main() -> io::Result<()> {
             _ => "Unrecognized problem".to_string()
         }
     });
+    println!("{} s elapsed", now.elapsed().as_secs_f32());
     Ok(())
 }
