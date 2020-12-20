@@ -21,14 +21,6 @@ impl Display for Tile {
     }
 }
 
-fn indices_2d_smallvec<T,F:Fn(usize,usize)->T>(width: usize, height: usize, func: F) -> SmallVec<[SmallVec<[T;10]>;10]> {
-    (0..height)
-        .map(|y| (0..width)
-            .map(|x| func(x, y))
-            .collect())
-        .collect()
-}
-
 impl Tile {
     fn from<I:Iterator<Item=String>>(lines: &mut I) -> Option<Self> {
         lines.next().map(|header| {
@@ -49,6 +41,14 @@ impl Tile {
         self.pixels[0].len()
     }
 
+    fn updated_pixels<F:Fn(usize,usize)->char>(&self, func: F) -> SmallVec<[SmallVec<[char;10]>;10]> {
+        (0..self.height())
+            .map(|y| (0..self.width())
+                .map(|x| func(x, y))
+                .collect())
+            .collect()
+    }
+
     fn rotated(&self, r: Rotation) -> Self {
         let mut result = self.clone();
         for _ in 0..match r {
@@ -57,7 +57,7 @@ impl Tile {
             Rotation::R180 => 2,
             Rotation::R270 => 3,
         } {
-            result.pixels = indices_2d_smallvec(result.width(), result.height(), |x, y| result.pixels[result.width() - x - 1][y]);
+            result.pixels = result.updated_pixels(|x, y| result.pixels[result.width() - x - 1][y]);
         }
         result
     }
@@ -66,11 +66,12 @@ impl Tile {
         let mut result = self.clone();
         match f {
             Flip::X | Flip::Xy =>
-                result.pixels = indices_2d_smallvec(result.width(), result.height(), |x, y| result.pixels[result.height() - y - 1][x]),
+                result.pixels = self.updated_pixels(|x, y| result.pixels[result.height() - y - 1][x]),
             _ => {}
         }
         match f {
-            Flip::Y | Flip::Xy => result.pixels = indices_2d_smallvec(result.width(), result.height(), |x, y| result.pixels[y][result.width() - x - 1]),
+            Flip::Y | Flip::Xy =>
+                result.pixels = self.updated_pixels(|x, y| result.pixels[y][result.width() - x - 1]),
             _ => {}
         }
         result
