@@ -95,7 +95,7 @@ enum Status {
 fn or(s1: Status, s2: Status) -> Status {
     match (s1, s2) {
         (Status::Yes(set1), Status::Yes(set2)) =>
-            Status::Yes(set1.union(&set2).map(|x| *x).collect()),
+            Status::Yes(set1.union(&set2).copied().collect()),
         (Status::Yes(set), _) | (_, Status::Yes(set)) => Status::Yes(set.clone()),
         (Status::Pending, _) | (_, Status::Pending) => Status::Pending,
         _ => Status::No
