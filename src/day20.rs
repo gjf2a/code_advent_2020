@@ -21,6 +21,14 @@ impl Display for Tile {
     }
 }
 
+fn indices_2d_smallvec<T,F:Fn(usize,usize)->T>(width: usize, height: usize, func: F) -> SmallVec<[SmallVec<[T;10]>;10]> {
+    (0..height)
+        .map(|y| (0..width)
+            .map(|x| func(x, y))
+            .collect())
+        .collect()
+}
+
 impl Tile {
     fn from<I:Iterator<Item=String>>(lines: &mut I) -> Option<Self> {
         lines.next().map(|header| {
@@ -49,25 +57,24 @@ impl Tile {
             Rotation::R180 => 2,
             Rotation::R270 => 3,
         } {
-            result.pixels = (0..result.height())
-                .map(|y| (0..result.width())
-                    .map(|x| result.pixels[result.width() - x - 1][y])
-                    .collect())
-                .collect()
+            result.pixels = indices_2d_smallvec(result.width(), result.height(), |x, y| result.pixels[result.width() - x - 1][y]);
         }
         result
     }
-/*
-    fn flipped(&self, f: Flip) -> Self {
-        match f {
-            Flip::Id => self.clone(),
-            Flip::X => {}
-            Flip::Y => {}
-            Flip::Xy => {}
-        }
-    }
 
- */
+    fn flipped(&self, f: Flip) -> Self {
+        let mut result = self.clone();
+        match f {
+            Flip::X | Flip::Xy =>
+                result.pixels = indices_2d_smallvec(result.width(), result.height(), |x, y| result.pixels[result.height() - y - 1][x]),
+            _ => {}
+        }
+        match f {
+            Flip::Y | Flip::Xy => result.pixels = indices_2d_smallvec(result.width(), result.height(), |x, y| result.pixels[y][result.width() - x - 1]),
+            _ => {}
+        }
+        result
+    }
 }
 
 #[derive(Debug,Clone)]
@@ -126,7 +133,11 @@ mod tests {
 
     #[test]
     fn rotate() {
-        let tiles: Vec<(Tile,Rotation)> = strs_to_tiles(&["Tile 1101:\n###\n...\n#.#\n", "Tile 1101:\n#.#\n..#\n#.#\n", "Tile 1101:\n#.#\n...\n###\n", "Tile 1101:\n#.#\n#..\n#.#\n"])
+        let tiles: Vec<(Tile,Rotation)> = strs_to_tiles(&[
+            "Tile 1101:\n###\n...\n#.#\n",
+            "Tile 1101:\n#.#\n..#\n#.#\n",
+            "Tile 1101:\n#.#\n...\n###\n",
+            "Tile 1101:\n#.#\n#..\n#.#\n"])
             .zip(&[Rotation::R0, Rotation::R90, Rotation::R180, Rotation::R270])
             .map(|(t, r)| (t, *r))
             .collect();
@@ -138,6 +149,17 @@ mod tests {
 
     #[test]
     fn flip() {
-
+        let tiles: Vec<(Tile,Flip)> = strs_to_tiles(&[
+            "Tile 1101:\n##.\n...\n#.#\n",
+            "Tile 1101:\n#.#\n...\n##.\n",
+            "Tile 1101:\n.##\n...\n#.#\n",
+            "Tile 1101:\n#.#\n...\n.##\n"])
+            .zip(&[Flip::Id, Flip::X, Flip::Y, Flip::Xy])
+            .map(|(t, f)| (t, *f))
+            .collect();
+        let (start,_) = &(tiles[0]);
+        for (tile, flip) in tiles.iter() {
+            assert_eq!(&start.flipped(*flip), tile);
+        }
     }
 }
