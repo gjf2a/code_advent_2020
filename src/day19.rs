@@ -146,15 +146,13 @@ impl ParseTable {
     }
 
     fn resolve_all(&mut self, rules: &Rules, c: u8, i: usize) {
-        loop {
+        let mut has_updates = true;
+        while has_updates {
             let updates = self.all_status_updates(rules, i, c);
-            let has_updates = updates.len() > 0;
+            has_updates = updates.len() > 0;
             self.apply_status_updates(i, updates);
-            if !has_updates {
-                self.convert_pending_to_no(i);
-                return;
-            }
         }
+        self.convert_pending_to_no(i);
     }
 
     fn all_status_updates(&self, rules: &Rules, i: usize, c: u8) -> Vec<(usize, Status)> {
