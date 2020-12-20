@@ -5,7 +5,7 @@ use std::{fmt, io};
 use std::collections::BTreeMap;
 use advent_code_lib::all_lines;
 
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,Eq,PartialEq)]
 struct Tile {
     id: i64,
     pixels: SmallVec<[SmallVec<[char; 10]>; 10]>
@@ -32,6 +32,42 @@ impl Tile {
             Tile {id, pixels}
         })
     }
+
+    fn height(&self) -> usize {
+        self.pixels.len()
+    }
+
+    fn width(&self) -> usize {
+        self.pixels[0].len()
+    }
+
+    fn rotated(&self, r: Rotation) -> Self {
+        let mut result = self.clone();
+        for _ in 0..match r {
+            Rotation::R0 => 0,
+            Rotation::R90 => 1,
+            Rotation::R180 => 2,
+            Rotation::R270 => 3,
+        } {
+            result.pixels = (0..result.height())
+                .map(|y| (0..result.width())
+                    .map(|x| result.pixels[result.width() - x - 1][y])
+                    .collect())
+                .collect()
+        }
+        result
+    }
+/*
+    fn flipped(&self, f: Flip) -> Self {
+        match f {
+            Flip::Id => self.clone(),
+            Flip::X => {}
+            Flip::Y => {}
+            Flip::Xy => {}
+        }
+    }
+
+ */
 }
 
 #[derive(Debug,Clone)]
@@ -53,6 +89,16 @@ impl PuzzlePieces {
     }
 }
 
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+enum Rotation {
+    R0, R90, R180, R270
+}
+
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+enum Flip {
+    Id, X, Y, Xy
+}
+
 impl Display for PuzzlePieces {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for tile in self.tiles.values() {
@@ -72,5 +118,38 @@ mod tests {
         let nums = [2311, 1951, 1171, 1427, 1489, 2473, 2971, 2729, 3079];
         assert_eq!(pp.tiles.len(), nums.len());
         assert!(nums.iter().all(|num| pp.tiles.contains_key(num)));
+    }
+
+    #[test]
+    fn rotate() {
+        /*
+        ###
+        ...
+        #.#
+
+        #.#
+        ..#
+        #.#
+
+        #.#
+        ...
+        ###
+
+        #.#
+        #..
+        #.#
+         */
+        let tiles: Vec<(Tile,Rotation)> = [
+            ("Tile 1101:\n###\n...\n#.#\n", Rotation::R0),
+            ("Tile 1101:\n#.#\n..#\n#.#\n", Rotation::R90),
+            ("Tile 1101:\n#.#\n...\n###\n", Rotation::R180),
+            ("Tile 1101:\n#.#\n#..\n#.#\n", Rotation::R270)
+                ].iter()
+            .map(|(s, r)| (Tile::from(&mut s.lines().map(|s| s.to_string())).unwrap(), *r))
+            .collect();
+        let (start,_) = &(tiles[0]);
+        for (tile, rotation) in tiles.iter() {
+            assert_eq!(&start.rotated(*rotation), tile);
+        }
     }
 }
