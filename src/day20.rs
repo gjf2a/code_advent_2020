@@ -3,7 +3,8 @@ use smallvec::SmallVec;
 use smallvec::alloc::fmt::Formatter;
 use std::{fmt, io};
 use std::collections::BTreeMap;
-use advent_code_lib::all_lines;
+use advent_code_lib::{all_lines, ManhattanDir};
+use enum_iterator::IntoEnumIterator;
 
 #[derive(Clone,Debug,Eq,PartialEq)]
 struct Tile {
@@ -76,6 +77,15 @@ impl Tile {
         }
         result
     }
+
+    fn edge(&self, side: ManhattanDir) -> String {
+        match side {
+            ManhattanDir::N => self.pixels[0].iter().collect(),
+            ManhattanDir::S => self.pixels.last().unwrap().iter().collect(),
+            ManhattanDir::E => (0..self.height()).map(|i| self.pixels[i].last().unwrap()).collect(),
+            ManhattanDir::W => (0..self.height()).map(|i| self.pixels[i][0]).collect()
+        }
+    }
 }
 
 #[derive(Debug,Clone)]
@@ -97,12 +107,12 @@ impl PuzzlePieces {
     }
 }
 
-#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+#[derive(Debug,Clone,Copy,Eq,PartialEq,Ord,PartialOrd,IntoEnumIterator)]
 enum Rotation {
     R0, R90, R180, R270
 }
 
-#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+#[derive(Debug,Clone,Copy,Eq,PartialEq,Ord,PartialOrd,IntoEnumIterator)]
 enum Flip {
     Id, X, Y, Xy
 }
@@ -116,9 +126,46 @@ impl Display for PuzzlePieces {
     }
 }
 
+#[derive(Debug)]
+struct Constraints {
+    variants: BTreeMap<i64,BTreeMap<(Rotation,Flip), Tile>>,
+    edges2variants: BTreeMap<String,(i64,Rotation,Flip,ManhattanDir)>
+}
+
+impl Constraints {
+    fn new(pp: &PuzzlePieces) -> Self {
+        let mut result = Constraints {variants: BTreeMap::new(), edges2variants: BTreeMap::new()};
+        result.setup(pp);
+        result.find_compatible();
+        result
+    }
+
+    fn setup(&mut self, pp: &PuzzlePieces) {
+        for (id, tile) in pp.tiles.iter() {
+            self.variants.insert(*id, BTreeMap::new());
+            for r in Rotation::into_enum_iter() {
+                for f in Flip::into_enum_iter() {
+                    self.variants.get_mut(id).unwrap().insert((r, f), tile.rotated(r).flipped(f));
+                }
+            }
+        }
+    }
+
+    fn find_compatible(&mut self) {
+        for (id, vars) in self.variants.iter() {
+            for ((r, f), tile) in vars.iter() {
+                for d in ManhattanDir::into_enum_iter() {
+                    self.edges2variants.insert(tile.edge(d), (*id, *r, *f, d));
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use advent_code_lib::ManhattanDir;
 
     #[test]
     fn load() {
@@ -129,7 +176,11 @@ mod tests {
     }
 
     fn strs_to_tiles<'a>(strs: &'a [&'a str]) -> impl Iterator<Item=Tile> + 'a {
-        strs.iter().map(|s| Tile::from(&mut s.lines().map(|s| s.to_string())).unwrap())
+        strs.iter().map(|s| str_to_tile(s))
+    }
+
+    fn str_to_tile<'a>(s: &'a str) -> Tile {
+        Tile::from(&mut s.lines().map(|s| s.to_string())).unwrap()
     }
 
     #[test]
@@ -161,6 +212,14 @@ mod tests {
         let (start,_) = &(tiles[0]);
         for (tile, flip) in tiles.iter() {
             assert_eq!(&start.flipped(*flip), tile);
+        }
+    }
+
+    #[test]
+    fn edge() {
+        let tile = str_to_tile("Tile 1101:\n##.\n##.\n#.#\n");
+        for (dir, target) in &[(ManhattanDir::N, "##."), (ManhattanDir::S, "#.#"), (ManhattanDir::E, "..#"), (ManhattanDir::W, "###")] {
+            assert_eq!(&tile.edge(*dir).as_str(), target);
         }
     }
 }

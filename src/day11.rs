@@ -1,6 +1,7 @@
 use std::{io, mem};
-use advent_code_lib::{all_lines, DirIter, Dir, Position};
+use advent_code_lib::{all_lines, Dir, Position};
 use std::fmt::{Display, Formatter, Error};
+use enum_iterator::IntoEnumIterator;
 
 const OCCUPIED: char = '#';
 const FLOOR: char = '.';
@@ -122,7 +123,7 @@ impl GameOfSeatsIterator {
     pub fn num_adj_occupied(&self, p: Position) -> usize {
         let gos = &self.gos.as_ref().unwrap();
         if gos.in_bounds(p) {
-            DirIter::new()
+            Dir::into_enum_iter()
                 .filter(|d| gos.seat((self.projection)(gos, *d, p)) == OCCUPIED)
                 .count()
         } else {
