@@ -67,8 +67,7 @@ impl Notes {
     }
 
     pub fn invalid_values_for(&self, ticket: &Vec<usize>) -> Vec<usize> {
-        ticket.iter()
-            .map(|n| *n)
+        ticket.iter().copied()
             .filter(|value| !self.fields.some_field_accepts(*value))
             .collect()
     }

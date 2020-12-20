@@ -39,8 +39,7 @@ impl ExNihilo for Puzzle2Group {
 
 impl Puzzle2Group {
     pub fn apply_line(&mut self, line: &str) {
-        self.selected_chars = self.selected_chars.iter()
-            .map(|c| *c)
+        self.selected_chars = self.selected_chars.iter().copied()
             .filter(|c| line.contains(*c))
             .collect();
     }
