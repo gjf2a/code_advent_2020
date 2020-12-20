@@ -64,11 +64,13 @@ impl Display for PuzzlePieces {
 
 #[cfg(test)]
 mod tests {
-    use crate::day20::PuzzlePieces;
+    use super::*;
 
     #[test]
     fn load() {
         let pp = PuzzlePieces::from("in/day20_ex.txt").unwrap();
-        println!("{}", pp);
+        let nums = [2311, 1951, 1171, 1427, 1489, 2473, 2971, 2729, 3079];
+        assert_eq!(pp.tiles.len(), nums.len());
+        assert!(nums.iter().all(|num| pp.tiles.contains_key(num)));
     }
 }
