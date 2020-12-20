@@ -120,36 +120,24 @@ mod tests {
         assert!(nums.iter().all(|num| pp.tiles.contains_key(num)));
     }
 
+    fn strs_to_tiles<'a>(strs: &'a [&'a str]) -> impl Iterator<Item=Tile> + 'a {
+        strs.iter().map(|s| Tile::from(&mut s.lines().map(|s| s.to_string())).unwrap())
+    }
+
     #[test]
     fn rotate() {
-        /*
-        ###
-        ...
-        #.#
-
-        #.#
-        ..#
-        #.#
-
-        #.#
-        ...
-        ###
-
-        #.#
-        #..
-        #.#
-         */
-        let tiles: Vec<(Tile,Rotation)> = [
-            ("Tile 1101:\n###\n...\n#.#\n", Rotation::R0),
-            ("Tile 1101:\n#.#\n..#\n#.#\n", Rotation::R90),
-            ("Tile 1101:\n#.#\n...\n###\n", Rotation::R180),
-            ("Tile 1101:\n#.#\n#..\n#.#\n", Rotation::R270)
-                ].iter()
-            .map(|(s, r)| (Tile::from(&mut s.lines().map(|s| s.to_string())).unwrap(), *r))
+        let tiles: Vec<(Tile,Rotation)> = strs_to_tiles(&["Tile 1101:\n###\n...\n#.#\n", "Tile 1101:\n#.#\n..#\n#.#\n", "Tile 1101:\n#.#\n...\n###\n", "Tile 1101:\n#.#\n#..\n#.#\n"])
+            .zip(&[Rotation::R0, Rotation::R90, Rotation::R180, Rotation::R270])
+            .map(|(t, r)| (t, *r))
             .collect();
         let (start,_) = &(tiles[0]);
         for (tile, rotation) in tiles.iter() {
             assert_eq!(&start.rotated(*rotation), tile);
         }
+    }
+
+    #[test]
+    fn flip() {
+
     }
 }
