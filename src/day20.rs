@@ -3,7 +3,7 @@ use smallvec::SmallVec;
 use smallvec::alloc::fmt::Formatter;
 use std::{fmt, io};
 use std::collections::BTreeMap;
-use advent_code_lib::{all_lines, ManhattanDir};
+use advent_code_lib::{all_lines, ManhattanDir, Position};
 use enum_iterator::IntoEnumIterator;
 
 #[derive(Clone,Debug,Eq,PartialEq)]
@@ -129,7 +129,7 @@ impl Display for PuzzlePieces {
 #[derive(Debug)]
 struct Constraints {
     variants: BTreeMap<i64,BTreeMap<(Rotation,Flip), Tile>>,
-    edges2variants: BTreeMap<String,(i64,Rotation,Flip,ManhattanDir)>
+    edges2variants: BTreeMap<(String,ManhattanDir),Vec<(i64,Rotation,Flip)>>
 }
 
 impl Constraints {
@@ -155,8 +155,94 @@ impl Constraints {
         for (id, vars) in self.variants.iter() {
             for ((r, f), tile) in vars.iter() {
                 for d in ManhattanDir::into_enum_iter() {
-                    self.edges2variants.insert(tile.edge(d), (*id, *r, *f, d));
+                    let key = (tile.edge(d), d);
+                    let value = (*id, *r, *f);
+                    match self.edges2variants.get_mut(&key) {
+                        None => {self.edges2variants.insert(key, vec![value]);},
+                        Some(v) => v.push(value)
+                    }
                 }
+            }
+        }
+    }
+
+    fn get_variant(&self, id: i64, r: Rotation, f: Flip) -> &Tile {
+        self.variants.get(&id).unwrap().get(&(r, f)).unwrap()
+    }
+}
+
+#[derive(Clone)]
+struct Layout {
+    tiles: BTreeMap<Position, (i64,Rotation,Flip)>,
+    side: usize
+}
+
+impl Layout {
+    fn new(pp: &PuzzlePieces) -> Self {
+        let constraints = Constraints::new(pp);
+        for (id, options) in constraints.variants.iter() {
+            for ((r, f), tile) in options.iter() {
+                let start = Layout {tiles: BTreeMap::new(), side: (pp.tiles.len() as f64).sqrt() as usize };
+                if let Some(result) = start.find_assignment(&constraints,Position::new(), *id, *r, *f) {
+                    return result;
+                }
+            }
+        }
+        panic!("No assignment possible");
+    }
+
+    fn in_bounds(&self, p: Position) -> bool {
+        p.col < self.side as isize && p.row < self.side as isize
+    }
+
+    fn complete(&self) -> bool {
+        self.tiles.len() == self.side.pow(2)
+    }
+
+    fn find_assignment(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> Option<Layout> {
+        if self.above_okay(constraints, assign, id, r, f) {
+            let mut candidate = self.clone();
+            candidate.tiles.insert(assign, (id, r, f));
+            let mut assign = assign;
+            let mut next_dir = ManhattanDir::E;
+            let mut next = ManhattanDir::E.next(assign);
+            if !self.in_bounds(next) {
+                next_dir = ManhattanDir::S;
+                assign = Position::from((0, assign.row));
+                next = ManhattanDir::S.next(assign);
+            }
+            if self.in_bounds(next) {
+                self.find_best_successor(constraints, constraints.get_variant(id, r, f).edge(next_dir), next, next_dir)
+            } else {
+                Some(candidate)
+            }
+        } else {
+            None
+        }
+    }
+
+    fn above_okay(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> bool {
+        let above_pos = ManhattanDir::N.next(assign);
+        match self.tiles.get(&above_pos) {
+            None => true,
+            Some((id_up, r_up, f_up)) => {
+                let edge_above = constraints.get_variant(id, r, f).edge(ManhattanDir::N);
+                let edge_below = constraints.get_variant(*id_up, *r_up, *f_up).edge(ManhattanDir::S);
+                edge_above == edge_below
+            }
+        }
+    }
+
+    fn find_best_successor(&self, constraints: &Constraints, edge: String, next: Position, next_dir: ManhattanDir) -> Option<Layout> {
+        match constraints.edges2variants.get(&(edge, next_dir.inverse())) {
+            None => None,
+            Some(options) => {
+                for (i,r,f) in options.iter() {
+                    if let Some(success) = self.find_assignment(constraints, next, *i, *r, *f) {
+                        return Some(success)
+                    }
+                }
+                None
             }
         }
     }
@@ -168,11 +254,21 @@ mod tests {
     use advent_code_lib::ManhattanDir;
 
     #[test]
-    fn load() {
+    fn load_ex() {
         let pp = PuzzlePieces::from("in/day20_ex.txt").unwrap();
         let nums = [2311, 1951, 1171, 1427, 1489, 2473, 2971, 2729, 3079];
         assert_eq!(pp.tiles.len(), nums.len());
         assert!(nums.iter().all(|num| pp.tiles.contains_key(num)));
+        let constraints = Constraints::new(&pp);
+        println!("{:?}", constraints.edges2variants);
+    }
+
+    #[test]
+    fn load_puzzle() {
+        let pp = PuzzlePieces::from("in/day20.txt").unwrap();
+        let nums: Vec<_> = pp.tiles.keys().copied().collect();
+        println!("{:?}", nums);
+        println!("total: {}", nums.len())
     }
 
     fn strs_to_tiles<'a>(strs: &'a [&'a str]) -> impl Iterator<Item=Tile> + 'a {

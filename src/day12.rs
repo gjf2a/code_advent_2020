@@ -2,7 +2,7 @@ use advent_code_lib::{Position, Dir, for_each_line, normalize_degrees};
 use std::io;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    let mut ship_pos = Position::from((0, 0));
+    let mut ship_pos = Position::new();
     let mut ship_heading = Dir::E;
     for_each_line(filename, |line| Ok({
         interpret_move_puzzle_1(&mut ship_pos, &mut ship_heading, line);
@@ -15,7 +15,7 @@ pub fn manhattan_str(p: Position) -> String {
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    let mut ship = Position::from((0, 0));
+    let mut ship = Position::new();
     let mut waypoint = Position::from((10, -1));
     for_each_line(filename, |line| Ok({
         interpret_move_puzzle_2(&mut ship, &mut waypoint, line);
