@@ -171,7 +171,7 @@ impl Constraints {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Layout {
     tiles: BTreeMap<Position, (i64,Rotation,Flip)>,
     side: usize
@@ -181,7 +181,7 @@ impl Layout {
     fn new(pp: &PuzzlePieces) -> Self {
         let constraints = Constraints::new(pp);
         for (id, options) in constraints.variants.iter() {
-            for ((r, f), tile) in options.iter() {
+            for (r, f) in options.keys() {
                 let start = Layout {tiles: BTreeMap::new(), side: (pp.tiles.len() as f64).sqrt() as usize };
                 if let Some(result) = start.find_assignment(&constraints,Position::new(), *id, *r, *f) {
                     return result;
@@ -191,33 +191,36 @@ impl Layout {
         panic!("No assignment possible");
     }
 
-    fn in_bounds(&self, p: Position) -> bool {
-        p.col < self.side as isize && p.row < self.side as isize
-    }
-
-    fn complete(&self) -> bool {
-        self.tiles.len() == self.side.pow(2)
+    fn corner_ids(&self) -> (i64,i64,i64,i64) {
+        let (corner1, (id1, _, _)) = self.tiles.first_key_value().unwrap();
+        let (corner2, (id2, _, _)) = self.tiles.last_key_value().unwrap();
+        let corner3 = Position::from((corner1.col, corner2.row));
+        let corner4 = Position::from((corner2.col, corner1.row));
+        let (id3, _, _) = self.tiles.get(&corner3).unwrap();
+        let (id4, _, _) = self.tiles.get(&corner4).unwrap();
+        (*id1, *id2, *id3, *id4)
     }
 
     fn find_assignment(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> Option<Layout> {
         if self.above_okay(constraints, assign, id, r, f) {
             let mut candidate = self.clone();
             candidate.tiles.insert(assign, (id, r, f));
-            let mut assign = assign;
-            let mut next_dir = ManhattanDir::E;
-            let mut next = ManhattanDir::E.next(assign);
-            if !self.in_bounds(next) {
-                next_dir = ManhattanDir::S;
-                assign = Position::from((0, assign.row));
-                next = ManhattanDir::S.next(assign);
-            }
-            if self.in_bounds(next) {
-                self.find_best_successor(constraints, constraints.get_variant(id, r, f).edge(next_dir), next, next_dir)
+            let (next, next_dir) = self.next_square_dir(assign);
+            if next.row < self.side as isize {
+                candidate.find_best_successor(constraints, constraints.get_variant(id, r, f).edge(next_dir), next, next_dir)
             } else {
                 Some(candidate)
             }
         } else {
             None
+        }
+    }
+
+    fn next_square_dir(&self, current: Position) -> (Position, ManhattanDir) {
+        if current.col == self.side as isize - 1 {
+            (Position::from((0, current.row + 1)), ManhattanDir::S)
+        } else {
+            (ManhattanDir::E.next(current), ManhattanDir::E)
         }
     }
 
@@ -317,5 +320,13 @@ mod tests {
         for (dir, target) in &[(ManhattanDir::N, "##."), (ManhattanDir::S, "#.#"), (ManhattanDir::E, "..#"), (ManhattanDir::W, "###")] {
             assert_eq!(&tile.edge(*dir).as_str(), target);
         }
+    }
+
+    #[test]
+    fn puzzle1() {
+        let result = Layout::new(&PuzzlePieces::from("in/day20_ex.txt").unwrap());
+        println!("layout: {:?}", result);
+        let corners = result.corner_ids();
+        println!("corners: {:?}", corners);
     }
 }
