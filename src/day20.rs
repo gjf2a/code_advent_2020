@@ -11,6 +11,12 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(PuzzlePieces::from(filename)?.corner_product().to_string())
 }
 
+pub fn solve_2(filename: &str) -> io::Result<String> {
+    let (count, monsters) = find_monsters(filename)?;
+    println!("{}", monsters);
+    Ok(count.to_string())
+}
+
 fn find_monsters(filename: &str) -> io::Result<(usize, Tile)> {
     let pp = PuzzlePieces::from(filename)?;
     Ok(Layout::from(&pp).image(&pp).all_variants().iter()
@@ -313,18 +319,6 @@ impl Constraints {
             }
         }
         None
-    }
-
-    fn edges2ids(&self) -> BTreeMap<String,BTreeSet<i64>> {
-        let mut result: BTreeMap<String,BTreeSet<i64>> = BTreeMap::new();
-        for ((edge,_),ids) in self.edges2variants.iter() {
-            let ids_iter = ids.iter().map(|v| v.id);
-            match result.get_mut(edge.as_str()) {
-                None => {result.insert(edge.clone(), ids_iter.collect());}
-                Some(set) => *set = set.union(&ids_iter.collect()).copied().collect()
-            }
-        }
-        result
     }
 }
 

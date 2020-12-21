@@ -73,6 +73,7 @@ fn main() -> io::Result<()> {
             "19_1" => day19::solve_1("in/day19.txt")?,
             "19_2" => day19::solve_2("in/day19.txt")?,
             "20_1" => day20::solve_1("in/day20.txt")?,
+            "20_2" => day20::solve_2("in/day20.txt")?,
             "21_1" => day21::solve_1("in/day21.txt")?,
             "21_2" => day21::solve_2("in/day21.txt")?,
             _ => "Unrecognized problem".to_string()
