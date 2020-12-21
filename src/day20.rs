@@ -5,12 +5,24 @@ use std::{fmt, io};
 use std::collections::{BTreeMap, BTreeSet};
 use advent_code_lib::{all_lines, ManhattanDir, Position};
 use enum_iterator::IntoEnumIterator;
+use itertools::Itertools;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(PuzzlePieces::from(filename)?.corner_product().to_string())
 }
 
-#[derive(Clone,Debug,Eq,PartialEq)]
+fn find_monsters(filename: &str) -> io::Result<(usize, Tile)> {
+    let pp = PuzzlePieces::from(filename)?;
+    Ok(Layout::from(&pp).image(&pp).all_variants().iter()
+        .map(|tile| {
+            let mut tile = tile.clone();
+            tile.show_monsters();
+            (tile.count('#'), tile)
+        })
+        .min().unwrap())
+}
+
+#[derive(Clone,Debug,Eq,PartialEq,Ord,PartialOrd)]
 struct Tile {
     id: i64,
     pixels: SmallVec<[SmallVec<[char; 10]>; 10]>
@@ -36,6 +48,51 @@ impl Tile {
                 .collect();
             Tile {id, pixels}
         })
+    }
+
+    fn all_variants(&self) -> Vec<Tile> {
+        Rotation::into_enum_iter().cartesian_product(Flip::into_enum_iter()).map(|(r, f)| self.rotated(r).flipped(f)).collect()
+    }
+
+    fn count(&self, t: char) -> usize {
+        self.pixels.iter().map(|row| row.iter().filter(|c| **c == t).count()).sum()
+    }
+
+    fn sea_monster() -> Self {
+        let mut monster_lines = "Tile: 13
+                  #
+#    ##    ##    ###
+ #  #  #  #  #  #   ".lines().map(|s| s.to_string());
+        Tile::from(&mut monster_lines).unwrap()
+    }
+
+    fn show_monsters(&mut self) {
+        let template = Tile::sea_monster();
+        for col in 0..self.width() {
+            for row in 0..self.height() {
+                self.blot_at(&template, col, row);
+            }
+        }
+    }
+
+    fn blot_at(&mut self, subimage: &Tile, col: usize, row: usize) {
+        if col + subimage.width() >= self.width() || row + subimage.height() >= self.height() {
+            return;
+        }
+        for sub_col in 0..subimage.width() {
+            for sub_row in 0..subimage.height() {
+                if subimage.get(sub_col, sub_row) == '#' && self.get(col + sub_col, row + sub_row) != '#' {
+                    return;
+                }
+            }
+        }
+        for sub_col in 0..subimage.width() {
+            for sub_row in 0..subimage.height() {
+                if subimage.get(sub_col, sub_row) == self.get(col + sub_col, row + sub_row) {
+                    self.pixels[row + sub_row][col + sub_col] = 'O';
+                }
+            }
+        }
     }
 
     fn get(&self, col: usize, row: usize) -> char {
@@ -221,12 +278,7 @@ impl Constraints {
 
     fn setup(&mut self, pp: &PuzzlePieces) {
         for (id, tile) in pp.tiles.iter() {
-            self.variants.insert(*id, BTreeMap::new());
-            for r in Rotation::into_enum_iter() {
-                for f in Flip::into_enum_iter() {
-                    self.variants.get_mut(id).unwrap().insert((r, f), tile.rotated(r).flipped(f));
-                }
-            }
+            self.variants.insert(*id, Rotation::into_enum_iter().cartesian_product(Flip::into_enum_iter()).map(|(r, f)| ((r, f), tile.rotated(r).flipped(f))).collect());
         }
     }
 
@@ -471,5 +523,13 @@ mod tests {
         let layout = Layout::from(&pp);
         assert_eq!(layout.tiles.len(), 144);
         assert_eq!(format!("{}", layout), "3389 3169 2591 1511 1901 2467 1777 1667 2797 3449 2861 1657 \n3461 2179 3391 1607 1487 1297 2609 3923 3931 3697 3559 1049 \n1327 3659 3011 1217 1423 2503 1303 2111 1061 2441 2897 2389 \n3719 3253 3491 2251 2399 2789 2543 3413 3797 1051 1163 2381 \n1877 3257 1549 2887 1949 1447 3821 1619 1483 1319 1571 3947 \n2801 1109 2099 1231 1381 1367 2137 2677 2311 1579 3323 2729 \n3761 3319 2833 3187 2663 1697 3889 1583 3023 1489 1741 3583 \n3853 2213 2351 3581 1409 1427 3733 2741 2557 3271 1693 1973 \n1009 1087 1559 2011 1997 3299 1789 3301 3593 3163 1093 3767 \n2113 2879 3229 3313 1277 3863 3623 2837 1747 3191 1123 1709 \n2963 2767 3617 1907 3331 2939 3527 2081 1279 1091 2339 1021 \n1621 3793 1879 3709 1181 3881 2593 1801 1307 3541 3727 3547 \n");
+    }
+
+    #[test]
+    fn monster() {
+        let (count, monsters) = find_monsters("in/day20_ex.txt").unwrap();
+        println!("{}", monsters);
+        println!("{}", count);
+        println!("{}", Tile::sea_monster());
     }
 }
