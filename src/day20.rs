@@ -38,8 +38,8 @@ impl Tile {
         })
     }
 
-    fn final_template(side: usize) -> Self {
-        Tile {id: 0, pixels: (0..side).map(|_| (0..side).map(|_| ' ').collect()).collect()}
+    fn get(&self, col: usize, row: usize) -> char {
+        self.pixels[row][col]
     }
 
     fn height(&self) -> usize {
@@ -108,24 +108,28 @@ impl Tile {
 
 #[derive(Debug,Clone)]
 struct PuzzlePieces {
-    tiles: BTreeMap<i64,Tile>
+    tiles: BTreeMap<i64,Tile>,
+    tile_height: usize,
+    tile_width: usize
 }
 
 impl PuzzlePieces {
     fn from(filename: &str) -> io::Result<Self> {
-        let mut pp = PuzzlePieces { tiles: BTreeMap::new()};
+        let mut tiles = BTreeMap::new();
+        let mut tile_width = 0;
+        let mut tile_height = 0;
         let mut lines = all_lines(filename)?;
         loop {
             match Tile::from(&mut lines) {
                 None => break,
-                Some(tile) => {pp.tiles.insert(tile.id, tile);}
+                Some(tile) => {
+                    tile_width = tile.width();
+                    tile_height = tile.height();
+                    tiles.insert(tile.id, tile);
+                }
             }
         }
-        Ok(pp)
-    }
-
-    fn side(&self) -> usize {
-        (self.tiles.len() as f64).sqrt() as usize
+        Ok(PuzzlePieces { tiles, tile_height, tile_width })
     }
 
     fn ids_with_friends(&self, friends: usize) -> BTreeSet<i64> {
@@ -277,25 +281,55 @@ impl Constraints {
 
 #[derive(Debug)]
 struct Layout {
-    tiles: BTreeMap<Position, TileVariant>
+    tiles: BTreeMap<Position, TileVariant>,
+    tile_width: usize,
+    tile_height: usize,
+    tile_columns: usize,
+    tile_rows: usize
 }
 
 impl Layout {
+    fn new(tiles: BTreeMap<Position,TileVariant>, tile_width: usize, tile_height: usize) -> Self {
+        let (min, _) = tiles.first_key_value().unwrap();
+        let (max, _) = tiles.last_key_value().unwrap();
+        let diff = *max - *min;
+        Layout {tiles: tiles.iter().map(|(p,tv)| (*p - *min, *tv)).collect(),
+            tile_columns: (diff.col + 1) as usize, tile_rows: (diff.row + 1) as usize,
+            tile_width: tile_width - 2, tile_height: tile_height - 2}
+    }
+
     fn from(pp: &PuzzlePieces) -> Self {
         let mut constraints = Constraints::new(pp);
         let mut selected = TileVariant {id: *pp.corner_ids().first().unwrap(), rotation: Rotation::R0, flip: Flip::Id};
         constraints.assign(selected.id);
-        let mut result = Layout { tiles: BTreeMap::new() };
+        let mut tiles = BTreeMap::new();
         let mut p = Position::new();
         loop {
-            result.tiles.insert(p, selected);
+            tiles.insert(p, selected);
             let (next, next_dir) = match constraints.get_match(selected) {
                 Some(next) => next,
-                None => return result
+                None => return Layout::new(tiles, pp.tile_width, pp.tile_height)
             };
             p = next_dir.next(p);
             selected = next;
         }
+    }
+
+    fn char_at(&self, pp: &PuzzlePieces, col: usize, row: usize) -> char {
+        let tile_col = (col / self.tile_width) as isize;
+        let tile_row = (row / self.tile_height) as isize;
+        let tile_id = self.tiles.get(&Position::from((tile_col, tile_row))).unwrap();
+        let char_col = col % self.tile_width + 1;
+        let char_row = row % self.tile_height + 1;
+        pp.tiles.get(&tile_id.id).unwrap().rotated(tile_id.rotation).flipped(tile_id.flip).get(char_col, char_row)
+    }
+
+    fn image(&self, pp: &PuzzlePieces) -> Tile {
+        Tile {id: 0, pixels: (0..self.tile_rows * self.tile_height)
+            .map(|r| (0..self.tile_columns * self.tile_width)
+                .map(|c| self.char_at(pp, c, r))
+                .collect())
+            .collect()}
     }
 }
 
@@ -403,6 +437,32 @@ mod tests {
         let layout = Layout::from(&pp);
         assert_eq!(layout.tiles.len(), 9);
         assert_eq!(format!("{}", layout), "3079 2311 1951 \n2473 1427 2729 \n1171 1489 2971 \n");
+        assert_eq!(format!("{}", layout.image(&pp)), "Tile 0:
+#####..##.#...##.#..#.#.
+......#..#....#.#....###
+...######..#.#.###.##.##
+#..#.#####.#...#####.###
+##.#...####.##.#....#.##
+#.#####....#.########...
+..###.#.#..##...#..#....
+......#.....#..#...####.
+....##.#.###..#..##.#..#
+..###.#.#.####.#..####.#
+##..#.######.#...#.#.###
+#.########..##....####.#
+..#.#.#.#...#...#.##..##
+###.###..##.#.#..#..#...
+.##.###...#.##.#....#.#.
+..######.##.#..#...#.###
+..##.#..#.##.##.###.#.#.
+#.#..#.###...#.###.####.
+###.####.#.#.#..#..#.#..
+.###.###.#.#.#...####..#
+##....###...#####..#####
+#...####..#...#..#..##.#
+.##.####..##..##..###.#.
+###..#...#...##...###...
+");
     }
 
     #[test]
