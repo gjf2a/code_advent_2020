@@ -6,6 +6,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use advent_code_lib::{all_lines, ManhattanDir, Position};
 use enum_iterator::IntoEnumIterator;
 
+pub fn solve_1(filename: &str) -> io::Result<String> {
+    Ok(PuzzlePieces::from(filename)?.corner_product().to_string())
+}
+
 #[derive(Clone,Debug,Eq,PartialEq)]
 struct Tile {
     id: i64,
@@ -86,6 +90,16 @@ impl Tile {
             ManhattanDir::W => (0..self.height()).map(|i| self.pixels[i][0]).collect()
         }
     }
+
+    fn all_possible_edges(&self) -> BTreeSet<String> {
+        let mut result = BTreeSet::new();
+        for dir in ManhattanDir::into_enum_iter() {
+            let edge = self.edge(dir);
+            result.insert(edge.chars().rev().collect());
+            result.insert(edge);
+        }
+        result
+    }
 }
 
 #[derive(Debug,Clone)]
@@ -105,6 +119,18 @@ impl PuzzlePieces {
         }
         Ok(pp)
     }
+
+    fn corner_ids(&self) -> Vec<i64> {
+        let edges = Edges::from(self);
+        self.tiles.iter()
+            .filter(|(_, tile)| edges.edges_with_friends(tile) == 2)
+            .map(|(id,_)| *id)
+            .collect()
+    }
+
+    fn corner_product(&self) -> i64 {
+        self.corner_ids().iter().product()
+    }
 }
 
 #[derive(Debug,Clone,Copy,Eq,PartialEq,Ord,PartialOrd,IntoEnumIterator)]
@@ -123,6 +149,37 @@ impl Display for PuzzlePieces {
             writeln!(f, "{}", tile).unwrap();
         }
         Ok(())
+    }
+}
+
+struct Edges {
+    edge2tile: BTreeMap<String,Vec<i64>>
+}
+
+impl Edges {
+    fn from(pp: &PuzzlePieces) -> Self {
+        let mut result = Edges { edge2tile: BTreeMap::new() };
+        for (id, tile) in pp.tiles.iter() {
+            for edge in tile.all_possible_edges() {
+                result.add(edge, *id);
+            }
+        }
+        result
+    }
+
+    fn add(&mut self, edge: String, id: i64) {
+        if let Some(v) = self.edge2tile.get_mut(edge.as_str()) {
+            v.push(id);
+        } else {
+            self.edge2tile.insert(edge, vec![id]);
+        }
+    }
+
+    fn edges_with_friends(&self, tile: &Tile) -> usize {
+        ManhattanDir::into_enum_iter()
+            .map(|d| tile.edge(d))
+            .filter(|e| self.edge2tile.get(e.as_str()).unwrap().len() > 1 || self.edge2tile.get(e.chars().rev().collect::<String>().as_str()).unwrap().len() > 1)
+            .count()
     }
 }
 
@@ -217,13 +274,9 @@ impl Layout {
 
     fn find_assignment(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> Option<Layout> {
         if self.above_okay(constraints, assign, id, r, f) {
-            if assign.row > 0 {
-                println!("down 1!");
-            }
             let mut candidate = self.clone();
             candidate.tiles.insert(assign, (id, r, f));
             candidate.ids.insert(id);
-            candidate.print_id_layout();
             let (prev, next, next_dir) = self.square_prev_next_dir(assign);
             if next.row < self.side as isize {
                 let (ni, nr, nf) = candidate.tiles.get(&prev).unwrap();
@@ -285,16 +338,6 @@ mod tests {
         let nums = [2311, 1951, 1171, 1427, 1489, 2473, 2971, 2729, 3079];
         assert_eq!(pp.tiles.len(), nums.len());
         assert!(nums.iter().all(|num| pp.tiles.contains_key(num)));
-        let constraints = Constraints::new(&pp);
-        println!("{:?}", constraints.edges2variants);
-    }
-
-    #[test]
-    fn load_puzzle() {
-        let pp = PuzzlePieces::from("in/day20.txt").unwrap();
-        let nums: Vec<_> = pp.tiles.keys().copied().collect();
-        println!("{:?}", nums);
-        println!("total: {}", nums.len())
     }
 
     fn strs_to_tiles<'a>(strs: &'a [&'a str]) -> impl Iterator<Item=Tile> + 'a {
@@ -347,7 +390,20 @@ mod tests {
 
     #[test]
     fn puzzle1() {
-        let result = Layout::new(&PuzzlePieces::from("in/day20_ex.txt").unwrap());
-        assert_eq!(result.corner_id_product(), 20899048083289);
+        assert_eq!(solve_1("in/day20_ex.txt").unwrap(), "20899048083289");
+    }
+
+    #[test]
+    fn edges_friends() {
+        let pp = PuzzlePieces::from("in/day20_ex.txt").unwrap();
+        println!("{:?}", pp.corner_ids());/*
+        println!("Hello!!!!");
+        let edges = Edges::from(&pp);
+        for id in [1951, 3079, 2971, 1171].iter() {
+            assert_eq!(edges.edges_with_friends(pp.tiles.get(id).unwrap()), 2);
+        }
+        for (id, tile) in pp.tiles.iter() {
+            println!("{}: {} edges with friends", id, edges.edges_with_friends(tile));
+        }*/
     }
 }
