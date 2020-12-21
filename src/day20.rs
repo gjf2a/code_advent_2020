@@ -6,12 +6,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use advent_code_lib::{all_lines, ManhattanDir, Position};
 use enum_iterator::IntoEnumIterator;
 
-// Puzzle 2 concept
-// - Start by finding the corners and edges
-// - Next, find the border by trying out permutations of corners and edges
-// - Then, figure out the corners and edges of the next interior based on the exposed inner edges.
-// - Use recursion to fill in the next ring.
-
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(PuzzlePieces::from(filename)?.corner_product().to_string())
 }
@@ -146,10 +140,6 @@ impl PuzzlePieces {
         self.ids_with_friends(2)
     }
 
-    fn edge_ids(&self) -> BTreeSet<i64> {
-        self.ids_with_friends(3)
-    }
-
     fn corner_product(&self) -> i64 {
         self.corner_ids().iter().product()
     }
@@ -259,18 +249,16 @@ impl Constraints {
         self.variants.get(&v.id).unwrap().get(&(v.rotation, v.flip)).unwrap()
     }
 
-    fn get_match(&mut self, v: TileVariant, dir: ManhattanDir) -> Option<TileVariant> {
-        let edge2next = self.get_variant(v).edge(dir);
-        println!("v: {:?} edge2next: {}", v, edge2next);
-        for m in self.edges2variants.get(&(edge2next, dir.inverse())).unwrap().iter() {
-            println!("considering {:?}", m);
-            if !self.assigned.contains(&m.id) {
-                self.assigned.insert(m.id);
-                println!("Success");
-                return Some(*m);
+    fn get_match(&mut self, v: TileVariant) -> Option<(TileVariant,ManhattanDir)> {
+        for dir in ManhattanDir::into_enum_iter() {
+            let edge2next = self.get_variant(v).edge(dir);
+            for m in self.edges2variants.get(&(edge2next, dir.inverse())).unwrap().iter() {
+                if !self.assigned.contains(&m.id) {
+                    self.assigned.insert(m.id);
+                    return Some((*m, dir));
+                }
             }
         }
-        println!("Failed");
         None
     }
 
@@ -297,24 +285,33 @@ impl Layout {
         let mut constraints = Constraints::new(pp);
         let mut selected = TileVariant {id: *pp.corner_ids().first().unwrap(), rotation: Rotation::R0, flip: Flip::Id};
         constraints.assign(selected.id);
-        let mut next_dir = ManhattanDir::E;
         let mut result = Layout { tiles: BTreeMap::new() };
         let mut p = Position::new();
         loop {
             result.tiles.insert(p, selected);
-            let next = match constraints.get_match(selected, next_dir) {
+            let (next, next_dir) = match constraints.get_match(selected) {
                 Some(next) => next,
-                None => {
-                    next_dir = next_dir.clockwise();
-                    match constraints.get_match(selected, next_dir) {
-                        Some(next) => next,
-                        None => return result
-                    }
-                }
+                None => return result
             };
             p = next_dir.next(p);
             selected = next;
         }
+    }
+}
+
+impl Display for Layout {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut prev: Option<Position> = None;
+        for (p,n) in self.tiles.iter() {
+            if let Some(prev) = prev {
+                if prev.row != p.row {
+                    writeln!(f).unwrap();
+                }
+            }
+            write!(f, "{} ", n.id).unwrap();
+            prev = Some(*p);
+        }
+        writeln!(f)
     }
 }
 
@@ -404,6 +401,7 @@ mod tests {
     fn layout() {
         let pp = PuzzlePieces::from("in/day20_ex.txt").unwrap();
         let layout = Layout::from(&pp);
-        println!("{:?}", layout);
+        assert_eq!(layout.tiles.len(), 9);
+        assert_eq!(format!("{}", layout), "3079 2311 1951 \n2473 1427 2729 \n1171 1489 2971 \n");
     }
 }
