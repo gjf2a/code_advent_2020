@@ -58,30 +58,33 @@ impl AllergenCandidates {
 #[derive(Debug)]
 struct Allergens {
     allergen2ingredient: BTreeMap<String,String>,
-    ingredient2allergen: BTreeMap<String,String>,
-    ingredient_counts: Histogram<String>
+    safe_ingredient_counts: BTreeMap<String,usize>
 }
 
 impl Allergens {
     fn from(filename: &str) -> io::Result<Self> {
         let mut allergen_search = AllergenCandidates::new();
-        let mut ingredient_counts = Histogram::new();
+        let mut ingredient_counter = Histogram::new();
         all_lines(filename)?.for_each(|line| {
             let (ingredients, allergens) = process_input_line(line);
             for allergen in allergens {
                 allergen_search.add(allergen.as_str(), &ingredients);
             }
             for ingredient in ingredients {
-                ingredient_counts.bump(&ingredient);
+                ingredient_counter.bump(&ingredient);
             }
         });
         allergen_search.reduce();
-        let ingredient2allergen = allergen_search.allergen2ingredient.iter().map(|(a, i)| (i.clone(), a.clone())).collect();
-        Ok(Allergens {allergen2ingredient: allergen_search.allergen2ingredient, ingredient2allergen, ingredient_counts})
+        let unsafe_ingredients: BTreeSet<_> = allergen_search.allergen2ingredient.values().collect();
+        let safe_ingredient_counts = ingredient_counter.iter()
+            .filter(|(i, _)| !unsafe_ingredients.contains(i))
+            .map(|(i, c)| (i.clone(), *c))
+            .collect();
+        Ok(Allergens {allergen2ingredient: allergen_search.allergen2ingredient, safe_ingredient_counts })
     }
 
     fn allergen_free_counts(&self) -> usize {
-        self.ingredient_counts.iter().filter(|(i,_)| !self.ingredient2allergen.contains_key(i.as_str())).map(|(i, c)| c).sum()
+        self.safe_ingredient_counts.iter().map(|(_, c)| c).sum()
     }
 
     fn canonical_dangerous_list(&self) -> String {

@@ -126,6 +126,10 @@ impl PuzzlePieces {
         Ok(pp)
     }
 
+    fn remove(&mut self, id: i64) -> Tile {
+        self.tiles.remove(&id).unwrap()
+    }
+
     fn ids_with_friends(&self, friends: usize) -> Vec<i64> {
         let edges = Edges::from(self);
         self.tiles.iter()
