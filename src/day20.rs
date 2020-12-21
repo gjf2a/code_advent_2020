@@ -2,7 +2,7 @@ use std::fmt::Display;
 use smallvec::SmallVec;
 use smallvec::alloc::fmt::Formatter;
 use std::{fmt, io};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use advent_code_lib::{all_lines, ManhattanDir, Position};
 use enum_iterator::IntoEnumIterator;
 
@@ -174,6 +174,7 @@ impl Constraints {
 #[derive(Clone, Debug)]
 struct Layout {
     tiles: BTreeMap<Position, (i64,Rotation,Flip)>,
+    ids: BTreeSet<i64>,
     side: usize
 }
 
@@ -182,7 +183,7 @@ impl Layout {
         let constraints = Constraints::new(pp);
         for (id, options) in constraints.variants.iter() {
             for (r, f) in options.keys() {
-                let start = Layout {tiles: BTreeMap::new(), side: (pp.tiles.len() as f64).sqrt() as usize };
+                let start = Layout {tiles: BTreeMap::new(), ids: BTreeSet::new(), side: (pp.tiles.len() as f64).sqrt() as usize };
                 if let Some(result) = start.find_assignment(&constraints,Position::new(), *id, *r, *f) {
                     return result;
                 }
@@ -191,23 +192,42 @@ impl Layout {
         panic!("No assignment possible");
     }
 
-    fn corner_ids(&self) -> (i64,i64,i64,i64) {
+    fn corner_id_product(&self) -> i64 {
         let (corner1, (id1, _, _)) = self.tiles.first_key_value().unwrap();
         let (corner2, (id2, _, _)) = self.tiles.last_key_value().unwrap();
         let corner3 = Position::from((corner1.col, corner2.row));
         let corner4 = Position::from((corner2.col, corner1.row));
         let (id3, _, _) = self.tiles.get(&corner3).unwrap();
         let (id4, _, _) = self.tiles.get(&corner4).unwrap();
-        (*id1, *id2, *id3, *id4)
+        id1 * id2 * id3 * id4
+    }
+
+    fn print_id_layout(&self) {
+        for row in 0..self.side {
+            for col in 0..self.side {
+                let p = Position::from((col as isize, row as isize));
+                if let Some((id, _, _)) = self.tiles.get(&p) {
+                    print!("{} ", id);
+                }
+            }
+            println!();
+        }
+        println!();
     }
 
     fn find_assignment(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> Option<Layout> {
         if self.above_okay(constraints, assign, id, r, f) {
+            if assign.row > 0 {
+                println!("down 1!");
+            }
             let mut candidate = self.clone();
             candidate.tiles.insert(assign, (id, r, f));
-            let (next, next_dir) = self.next_square_dir(assign);
+            candidate.ids.insert(id);
+            candidate.print_id_layout();
+            let (prev, next, next_dir) = self.square_prev_next_dir(assign);
             if next.row < self.side as isize {
-                candidate.find_best_successor(constraints, constraints.get_variant(id, r, f).edge(next_dir), next, next_dir)
+                let (ni, nr, nf) = candidate.tiles.get(&prev).unwrap();
+                candidate.find_best_successor(constraints, constraints.get_variant(*ni, *nr, *nf).edge(next_dir), next, next_dir)
             } else {
                 Some(candidate)
             }
@@ -216,12 +236,13 @@ impl Layout {
         }
     }
 
-    fn next_square_dir(&self, current: Position) -> (Position, ManhattanDir) {
-        if current.col == self.side as isize - 1 {
-            (Position::from((0, current.row + 1)), ManhattanDir::S)
+    fn square_prev_next_dir(&self, current: Position) -> (Position, Position, ManhattanDir) {
+        let (dir, pos) = if current.col == self.side as isize - 1 {
+            (ManhattanDir::S, Position::from((0, current.row)))
         } else {
-            (ManhattanDir::E.next(current), ManhattanDir::E)
-        }
+            (ManhattanDir::E, current)
+        };
+        (pos, dir.next(pos), dir)
     }
 
     fn above_okay(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> bool {
@@ -229,8 +250,8 @@ impl Layout {
         match self.tiles.get(&above_pos) {
             None => true,
             Some((id_up, r_up, f_up)) => {
-                let edge_above = constraints.get_variant(id, r, f).edge(ManhattanDir::N);
                 let edge_below = constraints.get_variant(*id_up, *r_up, *f_up).edge(ManhattanDir::S);
+                let edge_above = constraints.get_variant(id, r, f).edge(ManhattanDir::N);
                 edge_above == edge_below
             }
         }
@@ -241,8 +262,10 @@ impl Layout {
             None => None,
             Some(options) => {
                 for (i,r,f) in options.iter() {
-                    if let Some(success) = self.find_assignment(constraints, next, *i, *r, *f) {
-                        return Some(success)
+                    if !self.ids.contains(i) {
+                        if let Some(success) = self.find_assignment(constraints, next, *i, *r, *f) {
+                            return Some(success)
+                        }
                     }
                 }
                 None
@@ -325,8 +348,6 @@ mod tests {
     #[test]
     fn puzzle1() {
         let result = Layout::new(&PuzzlePieces::from("in/day20_ex.txt").unwrap());
-        println!("layout: {:?}", result);
-        let corners = result.corner_ids();
-        println!("corners: {:?}", corners);
+        assert_eq!(result.corner_id_product(), 20899048083289);
     }
 }
