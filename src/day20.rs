@@ -44,6 +44,10 @@ impl Tile {
         })
     }
 
+    fn final_template(side: usize) -> Self {
+        Tile {id: 0, pixels: (0..side).map(|_| (0..side).map(|_| ' ').collect()).collect()}
+    }
+
     fn height(&self) -> usize {
         self.pixels.len()
     }
@@ -126,11 +130,11 @@ impl PuzzlePieces {
         Ok(pp)
     }
 
-    fn remove(&mut self, id: i64) -> Tile {
-        self.tiles.remove(&id).unwrap()
+    fn side(&self) -> usize {
+        (self.tiles.len() as f64).sqrt() as usize
     }
 
-    fn ids_with_friends(&self, friends: usize) -> Vec<i64> {
+    fn ids_with_friends(&self, friends: usize) -> BTreeSet<i64> {
         let edges = Edges::from(self);
         self.tiles.iter()
             .filter(|(_, tile)| edges.edges_with_friends(tile) == friends)
@@ -138,11 +142,11 @@ impl PuzzlePieces {
             .collect()
     }
 
-    fn corner_ids(&self) -> Vec<i64> {
+    fn corner_ids(&self) -> BTreeSet<i64> {
         self.ids_with_friends(2)
     }
 
-    fn edge_ids(&self) -> Vec<i64> {
+    fn edge_ids(&self) -> BTreeSet<i64> {
         self.ids_with_friends(3)
     }
 
@@ -201,15 +205,21 @@ impl Edges {
     }
 }
 
+#[derive(Debug,Copy,Clone,Eq,PartialEq)]
+struct TileVariant {
+    id: i64, rotation: Rotation, flip: Flip
+}
+
 #[derive(Debug)]
 struct Constraints {
     variants: BTreeMap<i64,BTreeMap<(Rotation,Flip), Tile>>,
-    edges2variants: BTreeMap<(String,ManhattanDir),Vec<(i64,Rotation,Flip)>>
+    edges2variants: BTreeMap<(String,ManhattanDir),Vec<TileVariant>>,
+    assigned: BTreeSet<i64>
 }
 
 impl Constraints {
     fn new(pp: &PuzzlePieces) -> Self {
-        let mut result = Constraints {variants: BTreeMap::new(), edges2variants: BTreeMap::new()};
+        let mut result = Constraints {variants: BTreeMap::new(), edges2variants: BTreeMap::new(), assigned: BTreeSet::new()};
         result.setup(pp);
         result.find_compatible();
         result
@@ -228,10 +238,10 @@ impl Constraints {
 
     fn find_compatible(&mut self) {
         for (id, vars) in self.variants.iter() {
-            for ((r, f), tile) in vars.iter() {
+            for ((rotation, flip), tile) in vars.iter() {
                 for d in ManhattanDir::into_enum_iter() {
                     let key = (tile.edge(d), d);
-                    let value = (*id, *r, *f);
+                    let value = TileVariant {id: *id, rotation: *rotation, flip: *flip};
                     match self.edges2variants.get_mut(&key) {
                         None => {self.edges2variants.insert(key, vec![value]);},
                         Some(v) => v.push(value)
@@ -241,106 +251,69 @@ impl Constraints {
         }
     }
 
-    fn get_variant(&self, id: i64, r: Rotation, f: Flip) -> &Tile {
-        self.variants.get(&id).unwrap().get(&(r, f)).unwrap()
+    fn assign(&mut self, id: i64) {
+        self.assigned.insert(id);
+    }
+
+    fn get_variant(&self, v: TileVariant) -> &Tile {
+        self.variants.get(&v.id).unwrap().get(&(v.rotation, v.flip)).unwrap()
+    }
+
+    fn get_match(&mut self, v: TileVariant, dir: ManhattanDir) -> Option<TileVariant> {
+        let edge2next = self.get_variant(v).edge(dir);
+        println!("v: {:?} edge2next: {}", v, edge2next);
+        for m in self.edges2variants.get(&(edge2next, dir.inverse())).unwrap().iter() {
+            println!("considering {:?}", m);
+            if !self.assigned.contains(&m.id) {
+                self.assigned.insert(m.id);
+                println!("Success");
+                return Some(*m);
+            }
+        }
+        println!("Failed");
+        None
+    }
+
+    fn edges2ids(&self) -> BTreeMap<String,BTreeSet<i64>> {
+        let mut result: BTreeMap<String,BTreeSet<i64>> = BTreeMap::new();
+        for ((edge,_),ids) in self.edges2variants.iter() {
+            let ids_iter = ids.iter().map(|v| v.id);
+            match result.get_mut(edge.as_str()) {
+                None => {result.insert(edge.clone(), ids_iter.collect());}
+                Some(set) => *set = set.union(&ids_iter.collect()).copied().collect()
+            }
+        }
+        result
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct Layout {
-    tiles: BTreeMap<Position, (i64,Rotation,Flip)>,
-    ids: BTreeSet<i64>,
-    side: usize
+    tiles: BTreeMap<Position, TileVariant>
 }
 
 impl Layout {
-    fn new(pp: &PuzzlePieces) -> Self {
-        let constraints = Constraints::new(pp);
-        for (id, options) in constraints.variants.iter() {
-            for (r, f) in options.keys() {
-                let start = Layout {tiles: BTreeMap::new(), ids: BTreeSet::new(), side: (pp.tiles.len() as f64).sqrt() as usize };
-                if let Some(result) = start.find_assignment(&constraints,Position::new(), *id, *r, *f) {
-                    return result;
-                }
-            }
-        }
-        panic!("No assignment possible");
-    }
-
-    fn corner_id_product(&self) -> i64 {
-        let (corner1, (id1, _, _)) = self.tiles.first_key_value().unwrap();
-        let (corner2, (id2, _, _)) = self.tiles.last_key_value().unwrap();
-        let corner3 = Position::from((corner1.col, corner2.row));
-        let corner4 = Position::from((corner2.col, corner1.row));
-        let (id3, _, _) = self.tiles.get(&corner3).unwrap();
-        let (id4, _, _) = self.tiles.get(&corner4).unwrap();
-        id1 * id2 * id3 * id4
-    }
-
-    fn print_id_layout(&self) {
-        for row in 0..self.side {
-            for col in 0..self.side {
-                let p = Position::from((col as isize, row as isize));
-                if let Some((id, _, _)) = self.tiles.get(&p) {
-                    print!("{} ", id);
-                }
-            }
-            println!();
-        }
-        println!();
-    }
-
-    fn find_assignment(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> Option<Layout> {
-        if self.above_okay(constraints, assign, id, r, f) {
-            let mut candidate = self.clone();
-            candidate.tiles.insert(assign, (id, r, f));
-            candidate.ids.insert(id);
-            let (prev, next, next_dir) = self.square_prev_next_dir(assign);
-            if next.row < self.side as isize {
-                let (ni, nr, nf) = candidate.tiles.get(&prev).unwrap();
-                candidate.find_best_successor(constraints, constraints.get_variant(*ni, *nr, *nf).edge(next_dir), next, next_dir)
-            } else {
-                Some(candidate)
-            }
-        } else {
-            None
-        }
-    }
-
-    fn square_prev_next_dir(&self, current: Position) -> (Position, Position, ManhattanDir) {
-        let (dir, pos) = if current.col == self.side as isize - 1 {
-            (ManhattanDir::S, Position::from((0, current.row)))
-        } else {
-            (ManhattanDir::E, current)
-        };
-        (pos, dir.next(pos), dir)
-    }
-
-    fn above_okay(&self, constraints: &Constraints, assign: Position, id: i64, r: Rotation, f: Flip) -> bool {
-        let above_pos = ManhattanDir::N.next(assign);
-        match self.tiles.get(&above_pos) {
-            None => true,
-            Some((id_up, r_up, f_up)) => {
-                let edge_below = constraints.get_variant(*id_up, *r_up, *f_up).edge(ManhattanDir::S);
-                let edge_above = constraints.get_variant(id, r, f).edge(ManhattanDir::N);
-                edge_above == edge_below
-            }
-        }
-    }
-
-    fn find_best_successor(&self, constraints: &Constraints, edge: String, next: Position, next_dir: ManhattanDir) -> Option<Layout> {
-        match constraints.edges2variants.get(&(edge, next_dir.inverse())) {
-            None => None,
-            Some(options) => {
-                for (i,r,f) in options.iter() {
-                    if !self.ids.contains(i) {
-                        if let Some(success) = self.find_assignment(constraints, next, *i, *r, *f) {
-                            return Some(success)
-                        }
+    fn from(pp: &PuzzlePieces) -> Self {
+        let mut constraints = Constraints::new(pp);
+        let mut selected = TileVariant {id: *pp.corner_ids().first().unwrap(), rotation: Rotation::R0, flip: Flip::Id};
+        constraints.assign(selected.id);
+        let mut next_dir = ManhattanDir::E;
+        let mut result = Layout { tiles: BTreeMap::new() };
+        let mut p = Position::new();
+        loop {
+            result.tiles.insert(p, selected);
+            let next = match constraints.get_match(selected, next_dir) {
+                Some(next) => next,
+                None => {
+                    next_dir = next_dir.clockwise();
+                    match constraints.get_match(selected, next_dir) {
+                        Some(next) => next,
+                        None => return result
                     }
                 }
-                None
-            }
+            };
+            p = next_dir.next(p);
+            selected = next;
         }
     }
 }
@@ -412,16 +385,25 @@ mod tests {
     }
 
     #[test]
-    fn edges_friends() {
-        let pp = PuzzlePieces::from("in/day20_ex.txt").unwrap();
-        println!("{:?}", pp.corner_ids());/*
-        println!("Hello!!!!");
-        let edges = Edges::from(&pp);
-        for id in [1951, 3079, 2971, 1171].iter() {
-            assert_eq!(edges.edges_with_friends(pp.tiles.get(id).unwrap()), 2);
+    fn max_2_ids_per_edge() {
+        let constraints = Constraints::new(&PuzzlePieces::from("in/day20.txt").unwrap());
+        let mut counts = BTreeSet::new();
+        for (_, id_set) in constraints.edges2ids() {
+            counts.insert(id_set.len());
         }
-        for (id, tile) in pp.tiles.iter() {
-            println!("{}: {} edges with friends", id, edges.edges_with_friends(tile));
-        }*/
+        assert_eq!(counts, btreeset! {1, 2});
+    }
+
+    #[test]
+    fn example_corners() {
+        let pp = PuzzlePieces::from("in/day20_ex.txt").unwrap();
+        assert_eq!(pp.corner_ids(), btreeset! {1171, 1951, 2971, 3079});
+    }
+
+    #[test]
+    fn layout() {
+        let pp = PuzzlePieces::from("in/day20_ex.txt").unwrap();
+        let layout = Layout::from(&pp);
+        println!("{:?}", layout);
     }
 }
