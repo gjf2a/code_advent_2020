@@ -6,6 +6,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use advent_code_lib::{all_lines, ManhattanDir, Position};
 use enum_iterator::IntoEnumIterator;
 
+// Puzzle 2 concept
+// - Start by finding the corners and edges
+// - Next, find the border by trying out permutations of corners and edges
+// - Then, figure out the corners and edges of the next interior based on the exposed inner edges.
+// - Use recursion to fill in the next ring.
+
 pub fn solve_1(filename: &str) -> io::Result<String> {
     Ok(PuzzlePieces::from(filename)?.corner_product().to_string())
 }
@@ -120,12 +126,20 @@ impl PuzzlePieces {
         Ok(pp)
     }
 
-    fn corner_ids(&self) -> Vec<i64> {
+    fn ids_with_friends(&self, friends: usize) -> Vec<i64> {
         let edges = Edges::from(self);
         self.tiles.iter()
-            .filter(|(_, tile)| edges.edges_with_friends(tile) == 2)
+            .filter(|(_, tile)| edges.edges_with_friends(tile) == friends)
             .map(|(id,_)| *id)
             .collect()
+    }
+
+    fn corner_ids(&self) -> Vec<i64> {
+        self.ids_with_friends(2)
+    }
+
+    fn edge_ids(&self) -> Vec<i64> {
+        self.ids_with_friends(3)
     }
 
     fn corner_product(&self) -> i64 {
