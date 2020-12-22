@@ -184,6 +184,7 @@ mod tests {
 
     fn test_line(line: &str, goal: i64) {
         assert_eq!(earliest_timestamp_for(&puzzle_2_line(line)), goal);
+        println!("goal: {}; new version: {:?}", goal, puzzle_2_solver(&puzzle_2_line(line)));
     }
 
     #[test]
