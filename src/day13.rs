@@ -49,15 +49,14 @@ fn puzzle_2_line(line: &str) -> Vec<(i64,i64)> {
 // https://byorgey.wordpress.com/2020/02/15/competitive-programming-in-haskell-modular-arithmetic-part-1/
 // https://byorgey.wordpress.com/2020/03/03/competitive-programming-in-haskell-modular-arithmetic-part-2/
 
-fn puzzle_2_solver(p2line: &Vec<(i64, i64)>) -> (i64, i64) {
+fn puzzle_2_solver(p2line: &Vec<(i64, i64)>) -> i64 {
     p2line.iter()
-        .map(|(m, a)| (*m, *a))
+        .map(|(m, a)| (*m, -*a))
         .fold_first(|(m, a), (n, b)| {
             let (g, u, v) = egcd(m, n);
-            let c = ((-a * n * v + -b * m * u) / g).modulo(m*n);
-            println!("m: {} a: {} n: {} b: {} g: {} u: {} v: {} c: {} mn: {}", m, a, n, b, g, u, v, c, m*n);
+            let c = ((a * n * v + b * m * u) / g).modulo(m*n);
             (m * n, c)
-        }).unwrap()
+        }).unwrap().1
 }
 
 /*
@@ -86,8 +85,8 @@ c = 1 * 13 * -1 + 0 = -13
  */
 
 pub fn solve_2() -> io::Result<String> {
-    let bus_offsets = puzzle_2_inputs("day13.txt")?;
-    Ok(earliest_timestamp_for(&bus_offsets).to_string())
+    let bus_offsets = puzzle_2_inputs("in/day13.txt")?;
+    Ok(puzzle_2_solver(&bus_offsets).to_string())
 }
 
 fn earliest_timestamp_for(bus_offsets: &[(i64,i64)]) -> i64 {
@@ -157,7 +156,7 @@ mod tests {
 
     fn test_line(line: &str, goal: i64) {
         assert_eq!(earliest_timestamp_for(&puzzle_2_line(line)), goal);
-        println!("goal: {}; new version: {:?}", goal, puzzle_2_solver(&puzzle_2_line(line)));
+        assert_eq!(puzzle_2_solver(&puzzle_2_line(line)), goal);
     }
 
     #[test]
