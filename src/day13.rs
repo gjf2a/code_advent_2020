@@ -1,12 +1,16 @@
 use std::io;
 use advent_code_lib::all_lines;
 use modulo::Mod;
-use crate::modulo_article::egcd;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let (earliest_departure, busses) = puzzle_1_inputs(filename)?;
     let (best, wait) = best_bus_and_wait(&busses, earliest_departure);
     Ok((best * wait).to_string())
+}
+
+pub fn solve_2() -> io::Result<String> {
+    let bus_offsets = puzzle_2_inputs("in/day13.txt")?;
+    Ok(puzzle_2_solver(&bus_offsets).to_string())
 }
 
 fn puzzle_1_inputs(filename: &str) -> io::Result<(usize, Vec<usize>)> {
@@ -59,6 +63,23 @@ fn puzzle_2_solver(p2line: &Vec<(i128, i128)>) -> i128 {
         }).unwrap().1
 }
 
+pub fn gcd(a: i128, b: i128) -> i128 {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+
+pub fn egcd(a: i128, b: i128) -> (i128,i128,i128) {
+    if b == 0 {
+        (a.abs(), if a < 0 {-1} else {1}, 0)
+    } else {
+        let (g, x, y) = egcd(b, a % b);
+        (g, y, x - (a / b) * y)
+    }
+}
+
 /*
 x = a (mod m)
 x = b (mod n)
@@ -84,15 +105,9 @@ c = 1 * 13 * -1 + 0 = -13
 
  */
 
-pub fn solve_2() -> io::Result<String> {
-    let bus_offsets = puzzle_2_inputs("in/day13.txt")?;
-    Ok(puzzle_2_solver(&bus_offsets).to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::modulo_article::gcd;
 
     fn earliest_timestamp_for(bus_offsets: &[(i128,i128)]) -> i128 {
         let (max_bus, max_offset) = bus_offsets.iter().max().unwrap();

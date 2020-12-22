@@ -19,7 +19,6 @@ pub mod day14;
 pub mod day15;
 pub mod day16;
 pub mod day17;
-pub mod modulo_article;
 pub mod day18;
 pub mod day19;
 pub mod day20;
