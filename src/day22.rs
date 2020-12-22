@@ -34,7 +34,8 @@ struct Game {
 }
 
 impl Game {
-    fn from(filename: &str, recursive: bool) -> io::Result<Self> {let mut iter = all_lines(filename)?;
+    fn from(filename: &str, recursive: bool) -> io::Result<Self> {
+        let mut iter = all_lines(filename)?;
         let deck1 = Deck::from(&mut iter);
         let deck2 = Deck::from(&mut iter);
         Ok(Game { deck1, deck2, recursive, previous_rounds: BTreeSet::new() })
@@ -142,7 +143,7 @@ impl Deck {
     fn score(&self) -> (Player,usize) {
         (self.player,
          self.cards.iter().rev().enumerate()
-            .map(|(count, value)| (count + 1) as usize * value)
+            .map(|(count, value)| (count + 1) * value)
             .sum())
     }
 }
