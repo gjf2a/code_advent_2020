@@ -82,19 +82,20 @@ impl Tile {
         if col + subimage.width() >= self.width() || row + subimage.height() >= self.height() {
             return;
         }
+        let mut updates = Vec::new();
         for sub_col in 0..subimage.width() {
             for sub_row in 0..subimage.height() {
-                if subimage.get(sub_col, sub_row) == '#' && self.get(col + sub_col, row + sub_row) != '#' {
-                    return;
+                if subimage.get(sub_col, sub_row) == '#' {
+                    if self.get(col + sub_col, row + sub_row) == '#' {
+                        updates.push((col + sub_col, row + sub_row));
+                    } else {
+                        return;
+                    }
                 }
             }
         }
-        for sub_col in 0..subimage.width() {
-            for sub_row in 0..subimage.height() {
-                if subimage.get(sub_col, sub_row) == self.get(col + sub_col, row + sub_row) {
-                    self.pixels[row + sub_row][col + sub_col] = 'O';
-                }
-            }
+        for (c, r) in updates {
+            self.pixels[r][c] = 'O';
         }
     }
 
@@ -320,6 +321,21 @@ impl Constraints {
         }
         None
     }
+
+    // This function is used in a test to show that the problem input is restricted to no more
+    // than two tiles sharing any given edge.
+    #[allow(dead_code)]
+    fn edges2ids(&self) -> BTreeMap<String,BTreeSet<i64>> {
+        let mut result: BTreeMap<String,BTreeSet<i64>> = BTreeMap::new();
+        for ((edge,_),ids) in self.edges2variants.iter() {
+            let ids_iter = ids.iter().map(|v| v.id);
+            match result.get_mut(edge.as_str()) {
+                None => {result.insert(edge.clone(), ids_iter.collect());}
+                Some(set) => *set = set.union(&ids_iter.collect()).copied().collect()
+            }
+        }
+        result
+    }
 }
 
 #[derive(Debug)]
@@ -409,7 +425,7 @@ mod tests {
         strs.iter().map(|s| str_to_tile(s))
     }
 
-    fn str_to_tile<'a>(s: &'a str) -> Tile {
+    fn str_to_tile(s: &str) -> Tile {
         Tile::from(&mut s.lines().map(|s| s.to_string())).unwrap()
     }
 

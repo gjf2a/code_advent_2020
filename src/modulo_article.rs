@@ -52,7 +52,7 @@ mod tests {
     #[test]
     pub fn test_egcd() {
         for (a, b, g) in &[
-            (20, 12, 4), (25, 15, 5), (40, 35, 5), (220, 121, 11)] {
+            (20, 12, 4), (25, 15, 5), (40, 35, 5), (220, 121, 11), (7, 13, 1)] {
             let (gp, x, y) = egcd(*a, *b);
             assert_eq!(gp, *g);
             assert_eq!(x * a + y * b, *g);
@@ -63,7 +63,7 @@ mod tests {
     #[test]
     pub fn test_mod_inverse() {
         for (a, m) in &[
-            (3, 7), (4, 13), (7, 10)] {
+            (3, 7), (4, 13), (7, 10), (7, 13)] {
             let b = modular_inverse(*a, *m);
             println!("Inverse of {} (mod {}) = {}", a, m, b);
             assert_eq!(a * b % m, 1);
