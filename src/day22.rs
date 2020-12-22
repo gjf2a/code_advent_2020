@@ -129,7 +129,7 @@ impl Deck {
     }
 
     fn copy_n(&self, n: usize) -> Self {
-        Deck {player: self.player.clone(), cards: self.cards.iter().take(n).copied().collect()}
+        Deck {player: self.player, cards: self.cards.iter().take(n).copied().collect()}
     }
 
     fn is_empty(&self) -> bool {
