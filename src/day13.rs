@@ -30,17 +30,17 @@ fn bus_departure(bus: usize, earliest_departure: usize) -> usize {
     earliest_departure + bus - earliest_departure % bus
 }
 
-fn puzzle_2_inputs(filename: &str) -> io::Result<Vec<(i64,i64)>> {
+fn puzzle_2_inputs(filename: &str) -> io::Result<Vec<(i128,i128)>> {
     let line_2 = all_lines(filename)?.skip(1).next().unwrap();
     Ok(puzzle_2_line(line_2.as_str()))
 }
 
 // First value is the bus number; second value is the offset from the first bus
-fn puzzle_2_line(line: &str) -> Vec<(i64,i64)> {
+fn puzzle_2_line(line: &str) -> Vec<(i128,i128)> {
     let busses: Vec<&str> = line.split(',').collect();
     (0..busses.len())
         .filter(|i| busses[*i] != "x")
-        .map(|i| (busses[i].parse::<i64>().unwrap(), i as i64))
+        .map(|i| (busses[i].parse::<i128>().unwrap(), i as i128))
         .collect()
 }
 
@@ -49,7 +49,7 @@ fn puzzle_2_line(line: &str) -> Vec<(i64,i64)> {
 // https://byorgey.wordpress.com/2020/02/15/competitive-programming-in-haskell-modular-arithmetic-part-1/
 // https://byorgey.wordpress.com/2020/03/03/competitive-programming-in-haskell-modular-arithmetic-part-2/
 
-fn puzzle_2_solver(p2line: &Vec<(i64, i64)>) -> i64 {
+fn puzzle_2_solver(p2line: &Vec<(i128, i128)>) -> i128 {
     p2line.iter()
         .map(|(m, a)| (*m, -*a))
         .fold_first(|(m, a), (n, b)| {
@@ -89,21 +89,21 @@ pub fn solve_2() -> io::Result<String> {
     Ok(puzzle_2_solver(&bus_offsets).to_string())
 }
 
-fn earliest_timestamp_for(bus_offsets: &[(i64,i64)]) -> i64 {
-    let (max_bus, max_offset) = bus_offsets.iter().max().unwrap();
-    let mut timestamp = *max_bus;
-    while !timestamp_works(timestamp - *max_offset, bus_offsets) {timestamp += *max_bus;}
-    timestamp - *max_offset
-}
-
-fn timestamp_works(timestamp: i64, bus_offsets: &[(i64,i64)]) -> bool {
-    bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset) % *bus == 0)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::modulo_article::gcd;
+
+    fn earliest_timestamp_for(bus_offsets: &[(i128,i128)]) -> i128 {
+        let (max_bus, max_offset) = bus_offsets.iter().max().unwrap();
+        let mut timestamp = *max_bus;
+        while !timestamp_works(timestamp - *max_offset, bus_offsets) {timestamp += *max_bus;}
+        timestamp - *max_offset
+    }
+
+    fn timestamp_works(timestamp: i128, bus_offsets: &[(i128,i128)]) -> bool {
+        bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset) % *bus == 0)
+    }
 
     #[test]
     fn puzzle_input_relatively_prime() {
@@ -154,7 +154,7 @@ mod tests {
         assert_eq!(earliest_timestamp_for(&puzzle_2_inputs("in/day13_ex.txt").unwrap()), 1068781);
     }
 
-    fn test_line(line: &str, goal: i64) {
+    fn test_line(line: &str, goal: i128) {
         assert_eq!(earliest_timestamp_for(&puzzle_2_line(line)), goal);
         assert_eq!(puzzle_2_solver(&puzzle_2_line(line)), goal);
     }

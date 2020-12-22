@@ -14,7 +14,7 @@ pub fn modular_exponentiation_1(b: u64, e: u32, m: u64) -> u64 {
     }
 }
 
-pub fn gcd(a: i64, b: i64) -> i64 {
+pub fn gcd(a: i128, b: i128) -> i128 {
     if b == 0 {
         a
     } else {
@@ -22,7 +22,7 @@ pub fn gcd(a: i64, b: i64) -> i64 {
     }
 }
 
-pub fn egcd(a: i64, b: i64) -> (i64,i64,i64) {
+pub fn egcd(a: i128, b: i128) -> (i128,i128,i128) {
     if b == 0 {
         (a.abs(), if a < 0 {-1} else {1}, 0)
     } else {
@@ -31,7 +31,7 @@ pub fn egcd(a: i64, b: i64) -> (i64,i64,i64) {
     }
 }
 
-pub fn modular_inverse(a: i64, m: i64) -> i64 {
+pub fn modular_inverse(a: i128, m: i128) -> i128 {
     let (g, _, y) = egcd(m, a);
     assert_eq!(g, 1);
     ((y % m) + m) % m
