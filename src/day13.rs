@@ -53,13 +53,10 @@ fn puzzle_2_solver(p2line: &Vec<(i64, i64)>) -> (i64, i64) {
     p2line.iter()
         .map(|(m, a)| (*m, *a))
         .fold_first(|(m, a), (n, b)| {
-            let a = (-a).modulo(m);
-            let b = (-b).modulo(n);
             let (g, u, v) = egcd(m, n);
-            assert_eq!(g, 1);
-            let c = (a * n * v + b * m * u).modulo(m * n);
-            println!("m: {} a: {} n: {} b: {} u: {} v: {} c: {}", m, a, n, b, u, v, c);
-            (c, m * n)
+            let c = ((-a * n * v + -b * m * u) / g).modulo(m*n);
+            println!("m: {} a: {} n: {} b: {} g: {} u: {} v: {} c: {} mn: {}", m, a, n, b, g, u, v, c, m*n);
+            (m * n, c)
         }).unwrap()
 }
 

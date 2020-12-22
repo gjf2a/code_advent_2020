@@ -62,7 +62,6 @@ fn play_puzzle_1_one_round(deck1: &mut Deck, deck2: &mut Deck) {
 }
 
 fn resolve_winner(one_wins: bool, card1: usize, card2: usize, deck1: &mut Deck, deck2: &mut Deck) {
-    //println!("{} wins!\n", if one_wins {deck1.player.as_str()} else {deck2.player.as_str()} );
     let (winner, cards) = if one_wins {(deck1, [card1, card2])} else {(deck2, [card2, card1])};
     cards.iter().for_each(|c| winner.cards.push_back(*c));
 }
@@ -103,13 +102,9 @@ impl Puzzle2Game {
     fn play_one_round(&mut self, deck1: &mut Deck, deck2: &mut Deck) {
         let card1 = deck1.cards.pop_front().unwrap();
         let card2 = deck2.cards.pop_front().unwrap();
-        //println!("{}'s deck: {},{:?}", deck1.player.as_str(), card1, deck1.cards);
-        //println!("{}'s deck: {},{:?}", deck2.player.as_str(), card2, deck2.cards);
         let one_wins = if card1 <= deck1.len() && card2 <= deck2.len() {
-            //println!("Recursion!!!");
             let mut recurred = Puzzle2Game::new();
             let (one_wins, _) = recurred.player_1_wins(&mut deck1.copy_n(card1), &mut deck2.copy_n(card2));
-            //println!("Recursion over; winner is {}", if one_wins {deck1.player.as_str()} else {deck2.player.as_str()});
             one_wins
         } else {
             card1 > card2
