@@ -60,7 +60,7 @@ impl Game {
             if self.repeated() {
                 return self.deck1.score();
             }
-            self.one_round();
+            self.play_one_round();
             if let Some(outcome) = self.final_score() {
                 return outcome;
             }
@@ -76,7 +76,7 @@ impl Game {
         }
     }
 
-    fn one_round(&mut self) {
+    fn play_one_round(&mut self) {
         let card1 = self.deck1.draw();
         let card2 = self.deck2.draw();
         let winner = self.winner(card1, card2);
@@ -99,7 +99,7 @@ impl Game {
         } else {
             (&mut self.deck2, [card2, card1])
         };
-        cards.iter().for_each(|c| winner.cards.push_back(*c));
+        cards.iter().for_each(|c| winner.add(*c));
     }
 }
 
@@ -121,6 +121,10 @@ impl Deck {
 
     fn draw(&mut self) -> usize {
         self.cards.pop_front().unwrap()
+    }
+
+    fn add(&mut self, card: usize) {
+        self.cards.push_back(card);
     }
 
     fn copy_n(&self, n: usize) -> Self {
