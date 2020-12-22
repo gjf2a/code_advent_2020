@@ -49,13 +49,18 @@ fn puzzle_2_line(line: &str) -> Vec<(i64,i64)> {
 // https://byorgey.wordpress.com/2020/02/15/competitive-programming-in-haskell-modular-arithmetic-part-1/
 // https://byorgey.wordpress.com/2020/03/03/competitive-programming-in-haskell-modular-arithmetic-part-2/
 
-fn puzzle_2_solver(p2line: &Vec<(i64,i64)>) -> (i64,i64) {
+fn puzzle_2_solver(p2line: &Vec<(i64, i64)>) -> (i64, i64) {
     p2line.iter()
         .map(|(m, a)| (*m, *a))
         .fold_first(|(m, a), (n, b)| {
-        let (g, u, v) = egcd(m, n);
-        (a.modulo(m) * n * v + b.modulo(n) * m * u, m * n)
-    }).unwrap()
+            let a = (-a).modulo(m);
+            let b = (-b).modulo(n);
+            let (g, u, v) = egcd(m, n);
+            assert_eq!(g, 1);
+            let c = (a * n * v + b * m * u).modulo(m * n);
+            println!("m: {} a: {} n: {} b: {} u: {} v: {} c: {}", m, a, n, b, u, v, c);
+            (c, m * n)
+        }).unwrap()
 }
 
 /*
@@ -94,14 +99,6 @@ fn earliest_timestamp_for(bus_offsets: &[(i64,i64)]) -> i64 {
     while !timestamp_works(timestamp - *max_offset, bus_offsets) {timestamp += *max_bus;}
     timestamp - *max_offset
 }
-/*
-fn earliest_timestamp_brute_force(bus_offsets: &[(usize, usize)]) -> usize {
-    let interval = bus_offsets[0].0;
-    let mut timestamp = interval;
-    while !timestamp_works(timestamp, bus_offsets) {timestamp += interval;}
-    timestamp
-}
-*/
 
 fn timestamp_works(timestamp: i64, bus_offsets: &[(i64,i64)]) -> bool {
     bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset) % *bus == 0)
@@ -111,27 +108,6 @@ fn timestamp_works(timestamp: i64, bus_offsets: &[(i64,i64)]) -> bool {
 mod tests {
     use super::*;
     use crate::modulo_article::gcd;
-
-    fn earliest_pair_timestamp(bus1: i64, bus2: i64, interval: i64) -> i64 {
-        let mut timestamp = bus1;
-        while !timestamp_works(timestamp, &[(bus1,0), (bus2,1)]) {timestamp += bus1;}
-        timestamp * interval
-    }
-
-    fn earliest_pair_timestamps(bus_offsets: &[(i64, i64)]) -> Vec<i64> {
-        let mut iter = bus_offsets.iter();
-        let base_bus = iter.next().unwrap().0;
-        iter.map(|(bus, offset)| earliest_pair_timestamp(base_bus, *bus, *offset))
-            .collect()
-    }
-
-    fn lcm(a: i64, b: i64) -> i64 {
-        (a * b) / gcd(a, b)
-    }
-
-    fn lcm_from(nums: &[i64]) -> i64 {
-        nums.iter().fold(1, |acc, x| lcm(acc, *x))
-    }
 
     #[test]
     fn puzzle_input_relatively_prime() {
@@ -197,16 +173,5 @@ mod tests {
     #[test]
     fn test_2_3() {
         test_line("1789,37,47,1889", 1202161486);
-    }
-
-    #[test]
-    fn idea() {
-        for line in &["17,x,13,19", "67,7,59,61", "67,x,7,59,61", "67,7,x,59,61", "1789,37,47,1889"] {
-            let nums = puzzle_2_line(line);
-            let pair_times = earliest_pair_timestamps(&nums);
-            let pair_steps: Vec<_> = pair_times.iter().map(|n| n / nums[0].0).collect();
-            let brute = earliest_timestamp_for(&nums);
-            println!("{}: pair times: {:?}: pair steps: {:?}, lcm: {} brute force: {} ({})", line, pair_times, pair_steps, lcm_from(&pair_times), brute, brute / nums[0].0);
-        }
     }
 }
