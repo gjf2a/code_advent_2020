@@ -134,6 +134,17 @@ mod tests {
     }
 
     #[test]
+    pub fn test_egcd() {
+        for (a, b, g) in &[
+            (20, 12, 4), (25, 15, 5), (40, 35, 5), (220, 121, 11), (7, 13, 1)] {
+            let (gp, x, y) = egcd(*a, *b);
+            assert_eq!(gp, *g);
+            assert_eq!(x * a + y * b, *g);
+            println!("egcd({}, {}) = {} = {}*{} + {}*{}", a, b, gp, a, x, b, y);
+        }
+    }
+
+    #[test]
     fn test_departure_1() {
         [(7, 945), (13, 949), (59, 944), (31, 961), (19, 950)].iter()
             .for_each(|(bus, depart)| assert_eq!(bus_departure(*bus, 939), *depart));
