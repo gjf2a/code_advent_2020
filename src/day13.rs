@@ -65,14 +65,6 @@ fn puzzle_2_solver(p2line: &Vec<(BigInt, BigInt)>) -> BigInt {
         }).unwrap().1.clone()
 }
 
-pub fn gcd(a: &BigInt, b: &BigInt) -> BigInt {
-    if b == &num::zero() {
-        a.clone()
-    } else {
-        gcd(b, &(a % b))
-    }
-}
-
 pub fn egcd(a: &BigInt, b: &BigInt) -> (BigInt,BigInt,BigInt) {
     if b == &num::zero() {
         (abs(a.clone()), if a < &num::zero() {-num::one::<BigInt>()} else {num::one()}, num::zero())
@@ -110,6 +102,14 @@ c = 1 * 13 * -1 + 0 = -13
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    pub fn gcd(a: &BigInt, b: &BigInt) -> BigInt {
+        if b == &num::zero() {
+            a.clone()
+        } else {
+            gcd(b, &(a % b))
+        }
+    }
 
     #[test]
     fn puzzle_input_relatively_prime() {

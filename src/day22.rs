@@ -3,37 +3,124 @@ use std::io;
 use advent_code_lib::all_lines;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
-    let (mut deck1, mut deck2) = decks_from(filename)?;
-    Ok(play_puzzle_1_to_end(&mut deck1, &mut deck2).to_string())
+    solve(filename, false)
 }
 
 pub fn solve_2(filename: &str) -> io::Result<String> {
-    let (mut deck1, mut deck2) = decks_from(filename)?;
-    let mut game = Puzzle2Game::new();
-    Ok(game.player_1_wins(&mut deck1, &mut deck2).1.to_string())
+    solve(filename, true)
 }
 
-fn decks_from(filename: &str) -> io::Result<(Deck,Deck)> {
-    let mut iter = all_lines(filename)?;
-    let deck1 = Deck::from(&mut iter);
-    let deck2 = Deck::from(&mut iter);
-    Ok((deck1, deck2))
+fn solve(filename: &str, recursive: bool) -> io::Result<String> {
+    let mut game = Game::from(filename, recursive)?;
+    let (_, score) = game.play_to_end();
+    Ok(score.to_string())
+}
+
+#[derive(Debug,Copy,Clone,Eq,PartialEq,Ord,PartialOrd)]
+enum Player {One, Two}
+
+impl Player {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "Player 1:" => Player::One,
+            "Player 2:" => Player::Two,
+            _ => panic!("Shouldn't happen")
+        }
+    }
+}
+
+struct Game {
+    deck1: Deck, deck2: Deck, recursive: bool, previous_rounds: BTreeSet<(Deck,Deck)>
+}
+
+impl Game {
+    fn from(filename: &str, recursive: bool) -> io::Result<Self> {let mut iter = all_lines(filename)?;
+        let deck1 = Deck::from(&mut iter);
+        let deck2 = Deck::from(&mut iter);
+        Ok(Game { deck1, deck2, recursive, previous_rounds: BTreeSet::new() })
+    }
+
+    fn subgame(&self, card1: usize, card2: usize) -> Self {
+        Game { deck1: self.deck1.copy_n(card1), deck2: self.deck2.copy_n(card2),
+            recursive: self.recursive, previous_rounds: BTreeSet::new() }
+    }
+
+    fn final_score(&self) -> Option<(Player,usize)> {
+        if self.deck1.is_empty() {
+            Some(self.deck2.score())
+        } else if self.deck2.is_empty() {
+            Some(self.deck1.score())
+        } else {
+            None
+        }
+    }
+
+    fn play_to_end(&mut self) -> (Player,usize) {
+        loop {
+            if self.repeated() {
+                return self.deck1.score();
+            }
+            self.one_round();
+            if let Some(outcome) = self.final_score() {
+                return outcome;
+            }
+        }
+    }
+
+    fn repeated(&mut self) -> bool {
+        self.recursive && {
+            let key = (self.deck1.clone(), self.deck2.clone());
+            let outcome = self.previous_rounds.contains(&key);
+            self.previous_rounds.insert(key);
+            outcome
+        }
+    }
+
+    fn one_round(&mut self) {
+        let card1 = self.deck1.draw();
+        let card2 = self.deck2.draw();
+        let winner = self.winner(card1, card2);
+        self.insert_cards(winner, card1, card2);
+    }
+
+    fn winner(&self, card1: usize, card2: usize) -> Player {
+        if self.recursive && card1 <= self.deck1.len() && card2 <= self.deck2.len() {
+            let mut recurred = self.subgame(card1, card2);
+            let (winner, _) = recurred.play_to_end();
+            winner
+        } else {
+            if card1 > card2 {Player::One} else {Player::Two}
+        }
+    }
+
+    fn insert_cards(&mut self, winner: Player, card1: usize, card2: usize) {
+        let (winner, cards) = if winner == Player::One {
+            (&mut self.deck1, [card1, card2])
+        } else {
+            (&mut self.deck2, [card2, card1])
+        };
+        cards.iter().for_each(|c| winner.cards.push_back(*c));
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Ord, PartialOrd)]
 struct Deck {
-    player: String,
+    player: Player,
     cards: VecDeque<usize>
 }
 
 impl Deck {
     fn from<I:Iterator<Item=String>>(iter: &mut I) -> Self {
-        let player = iter.next().unwrap();
+        let player = Player::from(iter.next().unwrap());
         let cards = iter
             .take_while(|s| s.len() > 0)
             .map(|s| s.parse::<usize>().unwrap())
             .collect();
         Deck {player, cards}
+    }
+
+    fn draw(&mut self) -> usize {
+        self.cards.pop_front().unwrap()
     }
 
     fn copy_n(&self, n: usize) -> Self {
@@ -48,68 +135,11 @@ impl Deck {
         self.cards.len()
     }
 
-    fn score(&self) -> usize {
-        self.cards.iter().rev().enumerate()
+    fn score(&self) -> (Player,usize) {
+        (self.player,
+         self.cards.iter().rev().enumerate()
             .map(|(count, value)| (count + 1) as usize * value)
-            .sum()
-    }
-}
-
-fn play_puzzle_1_one_round(deck1: &mut Deck, deck2: &mut Deck) {
-    let card1 = deck1.cards.pop_front().unwrap();
-    let card2 = deck2.cards.pop_front().unwrap();
-    resolve_winner(card1 > card2, card1, card2, deck1, deck2);
-}
-
-fn resolve_winner(one_wins: bool, card1: usize, card2: usize, deck1: &mut Deck, deck2: &mut Deck) {
-    let (winner, cards) = if one_wins {(deck1, [card1, card2])} else {(deck2, [card2, card1])};
-    cards.iter().for_each(|c| winner.cards.push_back(*c));
-}
-
-fn play_puzzle_1_to_end(deck1: &mut Deck, deck2: &mut Deck) -> usize {
-    while !deck1.is_empty() && !deck2.is_empty() {
-        play_puzzle_1_one_round(deck1, deck2);
-    }
-    score(deck2.is_empty(), deck1, deck2)
-}
-
-fn score(one_wins: bool, deck1: &Deck, deck2: &Deck) -> usize {
-    (if one_wins {deck1} else {deck2}).score()
-}
-
-struct Puzzle2Game {
-    previous_rounds: BTreeSet<(Deck,Deck)>    
-}
-
-impl Puzzle2Game {
-    fn new() -> Self {
-        Puzzle2Game { previous_rounds: BTreeSet::new() }
-    }
-
-    fn player_1_wins(&mut self, deck1: &mut Deck, deck2: &mut Deck) -> (bool,usize) {
-        while !deck1.is_empty() && !deck2.is_empty() {
-            let index = (deck1.clone(), deck2.clone());
-            if self.previous_rounds.contains(&index) {
-                return (true, deck1.score())
-            }
-            self.play_one_round(deck1, deck2);
-            self.previous_rounds.insert(index);
-        }
-        let one_wins = deck2.is_empty();
-        (one_wins, score(one_wins, deck1, deck2))
-    }
-    
-    fn play_one_round(&mut self, deck1: &mut Deck, deck2: &mut Deck) {
-        let card1 = deck1.cards.pop_front().unwrap();
-        let card2 = deck2.cards.pop_front().unwrap();
-        let one_wins = if card1 <= deck1.len() && card2 <= deck2.len() {
-            let mut recurred = Puzzle2Game::new();
-            let (one_wins, _) = recurred.player_1_wins(&mut deck1.copy_n(card1), &mut deck2.copy_n(card2));
-            one_wins
-        } else {
-            card1 > card2
-        };
-        resolve_winner(one_wins, card1, card2, deck1, deck2);
+            .sum())
     }
 }
 
