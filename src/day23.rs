@@ -17,7 +17,7 @@ pub fn solve_2(cups: [u8; 9]) -> String {
     cups.star_product().to_string()
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Copy)]
 struct CupNode {
     value: u32,
     next: usize
