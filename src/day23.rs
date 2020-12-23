@@ -1,5 +1,5 @@
 use num::Integer;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
 pub fn solve_1(cups: [u8; 9]) -> String {
     let mut cups = CupRing::new(cups, cups.len());
@@ -11,7 +11,7 @@ pub fn solve_1(cups: [u8; 9]) -> String {
 
 pub fn solve_2(cups: [u8; 9]) -> String {
     let mut cups = CupRing::new(cups, 1_000_000);
-    for i in 0..10_000_000 {
+    for _ in 0..10_000_000 {
         cups.move_once();
     }
     cups.star_product().to_string()
@@ -60,7 +60,6 @@ impl CupRing {
         for (i, node) in cups.iter().enumerate() {
             values2pointers[node.value as usize] = i;
         }
-        //let values2pointers = cups.iter().enumerate().map(|(i, n)| (n.value, i)).collect();
         CupRing { cups, values2pointers, current: 0, min: 1, max: total as u32 }
     }
 
@@ -72,11 +71,6 @@ impl CupRing {
         self.cups[dest_ptr].next = remove_start_ptr;
         self.cups[remove_end_ptr].next = after_dest_ptr;
         self.current = self.cups[self.current].next;
-    }
-
-    fn assert_no_nodes_lost(&self) {
-        let ptr_set: BTreeSet<usize> = self.cups.iter().map(|p| p.next).collect();
-        assert_eq!(ptr_set.len(), self.cups.len());
     }
 
     fn destination_remove_end_ptrs(&self) -> (usize, usize) {
@@ -162,14 +156,18 @@ mod tests {
         assert_eq!(solve_1([3, 8, 9, 1, 2, 5, 4, 6, 7]), "67384529");
     }
 
+    fn assert_no_nodes_lost(ring: &CupRing) {
+        let ptr_set: BTreeSet<usize> = ring.cups.iter().map(|p| p.next).collect();
+        assert_eq!(ptr_set.len(), ring.cups.len());
+    }
+
     #[test]
     fn slightly_big_test() {
-        let mut cups = CupRing::new([3, 8, 9, 1, 2, 5, 4, 6, 7], 1000000);
-        for i in 0..20 {
+        let mut cups = CupRing::new([3, 8, 9, 1, 2, 5, 4, 6, 7], 1_000_000);
+        for _ in 0..20 {
             cups.move_once();
-            //cups.assert_no_nodes_lost();
+            assert_no_nodes_lost(&cups);
         }
-        println!("{}", cups.star_product().to_string())
     }
 
     #[test]
