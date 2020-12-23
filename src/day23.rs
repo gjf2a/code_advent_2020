@@ -62,8 +62,6 @@ impl CupRing {
         let (dest_ptr, remove_end_ptr) = self.destination_remove_end_ptrs();
         let remove_start_ptr = self.cups[self.current].next;
         let after_dest_ptr = self.cups[dest_ptr].next;
-        println!("{:?}", self);
-        println!("dest: {} after_dest: {} remove_start: {} remove_end: {} ", dest_ptr, after_dest_ptr, remove_start_ptr, remove_end_ptr);
         self.cups[self.current].next = self.cups[remove_end_ptr].next;
         self.cups[dest_ptr].next = remove_start_ptr;
         self.cups[remove_end_ptr].next = after_dest_ptr;
@@ -73,7 +71,6 @@ impl CupRing {
 
     fn assert_no_nodes_lost(&self) {
         let ptr_set: BTreeSet<usize> = self.cups.iter().map(|p| p.next).collect();
-        println!("{:?}", ptr_set);
         assert_eq!(ptr_set.len(), self.cups.len());
     }
 
