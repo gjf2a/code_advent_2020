@@ -41,7 +41,7 @@ impl <'a> Iterator for CupNodeIter<'a> {
 #[derive(Debug,Clone)]
 struct CupRing {
     cups: Vec<CupNode>,
-    values2pointers: HashMap<u32, usize>,
+    values2pointers: Vec<usize>,
     current: usize,
     min: u32,
     max: u32
@@ -56,14 +56,12 @@ impl CupRing {
             .enumerate()
             .map(|(i, value)| CupNode { value, next: (i + 1).mod_floor(&total) })
             .collect();
-        let values2pointers = cups.iter().enumerate().map(|(i, n)| (n.value, i)).collect();
-        CupRing {
-            cups,
-            values2pointers,
-            current: 0,
-            min: 1,
-            max: total as u32
+        let mut values2pointers: Vec<usize> = std::iter::repeat(0).take(total + 1).collect();
+        for (i, node) in cups.iter().enumerate() {
+            values2pointers[node.value as usize] = i;
         }
+        //let values2pointers = cups.iter().enumerate().map(|(i, n)| (n.value, i)).collect();
+        CupRing { cups, values2pointers, current: 0, min: 1, max: total as u32 }
     }
 
     fn move_once(&mut self) {
@@ -95,7 +93,7 @@ impl CupRing {
         while values.contains(&destination_value) {
             destination_value = self.destination_label_sub(destination_value);
         }
-        (*self.values2pointers.get(&destination_value).unwrap(), remove_end_ptr)
+        (self.values2pointers[destination_value as usize], remove_end_ptr)
     }
 
     fn destination_label_sub(&self, label: u32) -> u32 {
