@@ -1,7 +1,7 @@
 use num::Integer;
 
-pub fn solve_1() -> String {
-    let mut cups = CupRing::new([1,5,6,7,9,4,8,2,3]);
+pub fn solve_1(cups: [u8; 9]) -> String {
+    let mut cups = CupRing::new(cups);
     for _ in 0..100 {
         cups.move_once()
     }
@@ -73,7 +73,8 @@ impl CupRing {
     }
 
     fn num_string(&self) -> String {
-        self.cups.iter().map(|c| (c + '0' as u8) as char).collect()
+        let one_at = self.cups.iter().enumerate().find(|(_,c)| **c == 1).map(|(i,_)| i).unwrap();
+        self.ind_iter(self.ind_add(one_at, 1), one_at).map(|i| (self.cups[i] + '0' as u8) as char).collect()
     }
 }
 
@@ -148,6 +149,11 @@ mod tests {
             cups.move_once();
             assert_eq!(&cups.cups, target);
         }
+        assert_eq!(cups.num_string(), "92658374");
     }
 
+    #[test]
+    fn bigger_test() {
+        assert_eq!(solve_1([3, 8, 9, 1, 2, 5, 4, 6, 7]), "67384529");
+    }
 }
