@@ -24,6 +24,7 @@ pub mod day19;
 pub mod day20;
 pub mod day21;
 pub mod day22;
+pub mod day23;
 
 use std::{env,io};
 use std::time::Instant;
@@ -78,6 +79,7 @@ fn main() -> io::Result<()> {
             "21_2" => day21::solve_2("in/day21.txt")?,
             "22_1" => day22::solve_1("in/day22.txt")?,
             "22_2" => day22::solve_2("in/day22.txt")?,
+            "23_1" => day23::solve_1(),
             _ => "Unrecognized problem".to_string()
         }
     });
