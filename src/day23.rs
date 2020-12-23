@@ -1,5 +1,5 @@
 use num::Integer;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 pub fn solve_1(cups: [u8; 9]) -> String {
     let mut cups = CupRing::new(cups, cups.len());
@@ -9,9 +9,13 @@ pub fn solve_1(cups: [u8; 9]) -> String {
     cups.num_string()
 }
 
-//pub fn solve_2(cups: [u8; 9]) -> String {
-
-//}
+pub fn solve_2(cups: [u8; 9]) -> String {
+    let mut cups = CupRing::new(cups, 1_000_000);
+    for i in 0..10_000_000 {
+        cups.move_once();
+    }
+    cups.star_product().to_string()
+}
 
 #[derive(Debug,Clone)]
 struct CupNode {
@@ -37,6 +41,7 @@ impl <'a> Iterator for CupNodeIter<'a> {
 #[derive(Debug,Clone)]
 struct CupRing {
     cups: Vec<CupNode>,
+    values2pointers: HashMap<u32, usize>,
     current: usize,
     min: u32,
     max: u32
@@ -46,12 +51,15 @@ const NUM_REMOVE: usize = 3;
 
 impl CupRing {
     fn new(ordering: [u8; 9], total: usize) -> Self {
+        let cups: Vec<CupNode> = ordering.iter().map(|v| *v as u32)
+            .chain((ordering.len()..total).map(|i| (i+1) as u32))
+            .enumerate()
+            .map(|(i, value)| CupNode { value, next: (i + 1).mod_floor(&total) })
+            .collect();
+        let values2pointers = cups.iter().enumerate().map(|(i, n)| (n.value, i)).collect();
         CupRing {
-            cups: ordering.iter().map(|v| *v as u32)
-                .chain((ordering.len()..total).map(|i| i as u32))
-                .enumerate()
-                .map(|(i, value)| CupNode { value, next: (i + 1).mod_floor(&total) })
-                .collect(),
+            cups,
+            values2pointers,
             current: 0,
             min: 1,
             max: total as u32
@@ -68,6 +76,11 @@ impl CupRing {
         self.current = self.cups[self.current].next;
     }
 
+    fn assert_no_nodes_lost(&self) {
+        let ptr_set: BTreeSet<usize> = self.cups.iter().map(|p| p.next).collect();
+        assert_eq!(ptr_set.len(), self.cups.len());
+    }
+
     fn destination_remove_end_ptrs(&self) -> (usize, usize) {
         let mut remove_end_ptr = 0;
         let mut destination_value = self.destination_label_sub(self.cups[self.current].value);
@@ -82,8 +95,7 @@ impl CupRing {
         while values.contains(&destination_value) {
             destination_value = self.destination_label_sub(destination_value);
         }
-        println!("dest value: {}", destination_value);
-        (destination_finder.find(|p| self.cups[*p].value == destination_value).unwrap(), remove_end_ptr)
+        (*self.values2pointers.get(&destination_value).unwrap(), remove_end_ptr)
     }
 
     fn destination_label_sub(&self, label: u32) -> u32 {
@@ -101,6 +113,15 @@ impl CupRing {
             .take_while(|p| self.cups[*p].value != 1)
             .map(|p| (self.cups[p].value as u8 + '0' as u8) as char)
             .collect()
+    }
+
+    fn star_product(&self) -> u64 {
+        self.iter()
+            .skip_while(|p| self.cups[*p].value != 1)
+            .skip(1)
+            .take(2)
+            .map(|p| self.cups[p].value as u64)
+            .product()
     }
 
     fn iter(&self) -> CupNodeIter {
@@ -141,5 +162,20 @@ mod tests {
     #[test]
     fn bigger_test() {
         assert_eq!(solve_1([3, 8, 9, 1, 2, 5, 4, 6, 7]), "67384529");
+    }
+
+    #[test]
+    fn slightly_big_test() {
+        let mut cups = CupRing::new([3, 8, 9, 1, 2, 5, 4, 6, 7], 1000000);
+        for i in 0..20 {
+            cups.move_once();
+            //cups.assert_no_nodes_lost();
+        }
+        println!("{}", cups.star_product().to_string())
+    }
+
+    #[test]
+    fn huge_test() {
+        assert_eq!(solve_2([3, 8, 9, 1, 2, 5, 4, 6, 7]), "149245887792");
     }
 }
