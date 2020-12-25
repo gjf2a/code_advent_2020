@@ -26,7 +26,7 @@ impl Floor {
             let destination = dirs.iter().fold(Position::new(), |p, hd| hd.next(p));
             match result.floor.get_mut(&destination) {
                 None => {result.floor.insert(destination, TileColor::Black);}
-                Some(color) => {*color = color.flip();}
+                Some(color) => {color.flip();}
             }
         });
         Ok(result)
@@ -81,7 +81,7 @@ impl Iterator for FloorOfLifeIter {
             for (p, c) in future.floor.iter_mut() {
                 let black_adj = current.num_black_adj(*p);
                 if *c == TileColor::White && black_adj == 2 || *c == TileColor::Black && (black_adj == 0 || black_adj > 2) {
-                    *c = c.flip();
+                    c.flip();
                 }
             }
             let mut result = Some(future);
@@ -99,8 +99,8 @@ enum TileColor {
 }
 
 impl TileColor {
-    fn flip(&self) -> TileColor {
-        match self {TileColor::Black => TileColor::White, TileColor::White => TileColor::Black}
+    fn flip(&mut self) {
+        *self = match self {TileColor::Black => TileColor::White, TileColor::White => TileColor::Black}
     }
 }
 
