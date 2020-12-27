@@ -98,22 +98,22 @@ impl CupRing {
         label
     }
 
-    fn advance_past_1<I:Iterator<Item=usize>>(&self, iter: &mut I) {
+    fn iter_after_1(&self) -> CupNodeIter {
+        let mut iter = self.iter();
         iter.by_ref().skip_while(|p| self.cups[*p].value != 1).next();
+        iter
     }
 
     fn num_string(&self) -> String {
-        let mut iter = self.iter();
-        self.advance_past_1(&mut iter);
-        iter.take_while(|p| self.cups[*p].value != 1)
+        self.iter_after_1()
+            .take_while(|p| self.cups[*p].value != 1)
             .map(|p| (self.cups[p].value as u8 + '0' as u8) as char)
             .collect()
     }
 
     fn star_product(&self) -> u64 {
-        let mut iter = self.iter();
-        self.advance_past_1(&mut iter);
-        iter.take(2)
+        self.iter_after_1()
+            .take(2)
             .map(|p| self.cups[p].value as u64)
             .product()
     }
