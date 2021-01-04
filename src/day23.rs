@@ -98,6 +98,13 @@ impl CupRing {
         label
     }
 
+    /*
+    // A worthy attempt. Try putting self into the iterator and see if it helps.
+    fn lazy_iter_after_1<'a>(&'a self) -> impl Iterator<Item=usize> + 'a {
+        self.iter().skip_while(|p| self.cups[*p].value != 1).skip(1)
+    }
+     */
+
     fn iter_after_1(&self) -> CupNodeIter {
         let mut iter = self.iter();
         iter.by_ref().skip_while(|p| self.cups[*p].value != 1).next();
