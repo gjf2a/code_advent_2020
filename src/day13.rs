@@ -59,7 +59,7 @@ fn puzzle_2_solver(p2line: &Vec<ModNum<i128>>) -> i128 {
         .map(|am| -*am)
         .fold_first(|a, b| a.chinese_remainder(b))
         .unwrap()
-        .n()
+        .a()
 }
 
 pub fn gcd(a: i128, b: i128) -> i128 {
@@ -103,7 +103,7 @@ mod tests {
     use super::*;
 
     fn earliest_timestamp_for(bus_offsets: &[ModNum<i128>]) -> i128 {
-        let (max_bus, max_offset) = bus_offsets.iter().map(|m| (m.modulo(), m.n())).max().unwrap();
+        let (max_bus, max_offset) = bus_offsets.iter().map(|m| (m.m(), m.a())).max().unwrap();
         let mut timestamp = max_bus;
         while !timestamp_works(timestamp - max_offset, bus_offsets) {timestamp += max_bus;}
         timestamp - max_offset
@@ -111,13 +111,13 @@ mod tests {
 
     fn timestamp_works(timestamp: i128, bus_offsets: &[ModNum<i128>]) -> bool {
         bus_offsets.iter()
-            .map(|m| (m.modulo(), m.n()))
+            .map(|m| (m.m(), m.a()))
             .all(|(bus, offset)| (timestamp + offset).mod_floor(&bus) == 0)
     }
 
     #[test]
     fn puzzle_input_relatively_prime() {
-        let inputs: Vec<_> = puzzle_2_inputs("in/day13.txt").unwrap().iter().map(|n| n.modulo()).collect();
+        let inputs: Vec<_> = puzzle_2_inputs("in/day13.txt").unwrap().iter().map(|n| n.m()).collect();
         assert_eq!(inputs, vec![23, 41, 37, 421, 17, 19, 29, 487, 13]);
         for i in 0..inputs.len() {
             let ni = inputs[i];
