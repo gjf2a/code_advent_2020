@@ -1,6 +1,7 @@
 use std::io;
 use advent_code_lib::all_lines;
 use num::Integer;
+use bare_metal_modulo::ModNum;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let (earliest_departure, busses) = puzzle_1_inputs(filename)?;
@@ -34,17 +35,17 @@ fn bus_departure(bus: usize, earliest_departure: usize) -> usize {
     earliest_departure + bus - earliest_departure.mod_floor(&bus)
 }
 
-fn puzzle_2_inputs(filename: &str) -> io::Result<Vec<(i128,i128)>> {
-    let line_2 = all_lines(filename)?.skip(1).next().unwrap();
+fn puzzle_2_inputs(filename: &str) -> io::Result<Vec<ModNum<i128>>> {
+    let line_2 = all_lines(filename)?.nth(1).unwrap();
     Ok(puzzle_2_line(line_2.as_str()))
 }
 
-// First value is the bus number; second value is the offset from the first bus
-fn puzzle_2_line(line: &str) -> Vec<(i128,i128)> {
-    let busses: Vec<&str> = line.split(',').collect();
-    (0..busses.len())
-        .filter(|i| busses[*i] != "x")
-        .map(|i| (busses[i].parse::<i128>().unwrap(), i as i128))
+// Main integer is the offset from the first bus; Modulo is the bus number
+fn puzzle_2_line(line: &str) -> Vec<ModNum<i128>> {
+    line.split(',')
+        .enumerate()
+        .filter(|(_,s)| *s != "x")
+        .map(|(i, s)| ModNum::new(i as i128, s.parse::<i128>().unwrap()))
         .collect()
 }
 
@@ -53,14 +54,12 @@ fn puzzle_2_line(line: &str) -> Vec<(i128,i128)> {
 // https://byorgey.wordpress.com/2020/02/15/competitive-programming-in-haskell-modular-arithmetic-part-1/
 // https://byorgey.wordpress.com/2020/03/03/competitive-programming-in-haskell-modular-arithmetic-part-2/
 
-fn puzzle_2_solver(p2line: &Vec<(i128, i128)>) -> i128 {
+fn puzzle_2_solver(p2line: &Vec<ModNum<i128>>) -> i128 {
     p2line.iter()
-        .map(|(m, a)| (*m, -*a))
-        .fold_first(|(m, a), (n, b)| {
-            let (g, u, v) = egcd(m, n);
-            let c = ((a * n * v + b * m * u) / g).mod_floor(&(m*n));
-            (m * n, c)
-        }).unwrap().1
+        .map(|am| -*am)
+        .fold_first(|a, b| a.chinese_remainder(b))
+        .unwrap()
+        .n()
 }
 
 pub fn gcd(a: i128, b: i128) -> i128 {
@@ -71,6 +70,7 @@ pub fn gcd(a: i128, b: i128) -> i128 {
     }
 }
 
+// Returns (g, x, y) where ax + by = g and g = gcd(a, b)
 pub fn egcd(a: i128, b: i128) -> (i128,i128,i128) {
     if b == 0 {
         (a.abs(), if a < 0 {-1} else {1}, 0)
@@ -102,20 +102,22 @@ c = 1 * 13 * -1 + 0 = -13
 mod tests {
     use super::*;
 
-    fn earliest_timestamp_for(bus_offsets: &[(i128,i128)]) -> i128 {
-        let (max_bus, max_offset) = bus_offsets.iter().max().unwrap();
-        let mut timestamp = *max_bus;
-        while !timestamp_works(timestamp - *max_offset, bus_offsets) {timestamp += *max_bus;}
-        timestamp - *max_offset
+    fn earliest_timestamp_for(bus_offsets: &[ModNum<i128>]) -> i128 {
+        let (max_bus, max_offset) = bus_offsets.iter().map(|m| (m.modulo(), m.n())).max().unwrap();
+        let mut timestamp = max_bus;
+        while !timestamp_works(timestamp - max_offset, bus_offsets) {timestamp += max_bus;}
+        timestamp - max_offset
     }
 
-    fn timestamp_works(timestamp: i128, bus_offsets: &[(i128,i128)]) -> bool {
-        bus_offsets.iter().all(|(bus, offset)| (timestamp + *offset).mod_floor(bus) == 0)
+    fn timestamp_works(timestamp: i128, bus_offsets: &[ModNum<i128>]) -> bool {
+        bus_offsets.iter()
+            .map(|m| (m.modulo(), m.n()))
+            .all(|(bus, offset)| (timestamp + offset).mod_floor(&bus) == 0)
     }
 
     #[test]
     fn puzzle_input_relatively_prime() {
-        let inputs: Vec<_> = puzzle_2_inputs("in/day13.txt").unwrap().iter().map(|(n, _)| *n).collect();
+        let inputs: Vec<_> = puzzle_2_inputs("in/day13.txt").unwrap().iter().map(|n| n.modulo()).collect();
         assert_eq!(inputs, vec![23, 41, 37, 421, 17, 19, 29, 487, 13]);
         for i in 0..inputs.len() {
             let ni = inputs[i];
@@ -165,7 +167,9 @@ mod tests {
     #[test]
     fn test_puzzle_2_inputs() {
         assert_eq!(puzzle_2_inputs("in/day13_ex.txt").unwrap(),
-                   vec![(7, 0), (13, 1), (59, 4), (31, 6), (19, 7)]);
+                   vec![(7, 0), (13, 1), (59, 4), (31, 6), (19, 7)].iter()
+                       .map(|(m, a)| ModNum::new(*a, *m))
+                       .collect::<Vec<_>>());
     }
 
     #[test]
