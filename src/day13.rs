@@ -40,11 +40,13 @@ fn bus_departure(bus: usize, earliest_departure: usize) -> usize {
 // https://byorgey.wordpress.com/2020/02/15/competitive-programming-in-haskell-modular-arithmetic-part-1/
 // https://byorgey.wordpress.com/2020/03/03/competitive-programming-in-haskell-modular-arithmetic-part-2/
 fn solve_2_str(input_line: &str) -> i128 {
-    ModNum::chinese_remainder_system(&mut input_line
-        .split(',')
-        .enumerate()
-        .filter(|(_,s)| *s != "x")
-        .map(|(i, s)| -ModNum::new(i as i128, s.parse::<i128>().unwrap())))
+    ModNum::chinese_remainder_system(
+        &mut input_line
+            .split(',')
+            .enumerate()
+            .filter(|(_, s)| *s != "x")
+            .map(|(i, s)| -ModNum::new(i as i128, s.parse::<i128>().unwrap()))
+            .inspect(|m| println!("{:?}", m)))
         .unwrap()
         .a()
 }
@@ -98,7 +100,12 @@ mod tests {
 
     #[test]
     fn test_2_2() {
-        for (line, goal) in &[("17,x,13,19", 3417), ("67,7,59,61", 754018), ("67,x,7,59,61", 779210), ("67,7,x,59,61", 1261476), ("1789,37,47,1889", 1202161486)] {
+        for (line, goal) in &[
+            ("17,x,13,19", 3417),
+            ("67,7,59,61", 754018),
+            ("67,x,7,59,61", 779210),
+            ("67,7,x,59,61", 1261476),
+            ("1789,37,47,1889", 1202161486)] {
             assert_eq!(solve_2_str(line), *goal);
         }
     }
