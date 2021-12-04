@@ -74,7 +74,7 @@ fn in_range(value: &str, min: usize, max: usize) -> bool {
 fn fields_and_values_from(filename: &str) -> io::Result<MultiLineObjects<BTreeMap<String,String>>> {
     let passports = MultiLineObjects::from_file
         (filename,
-         &mut |map: &mut BTreeMap<String,String>, line| {
+         |map: &mut BTreeMap<String,String>, line: &str| {
              for pair in line.split_whitespace() {
                  let parts: Vec<&str> = pair.split(':').collect();
                  map.insert(parts[0].to_owned(), parts[1].to_owned());

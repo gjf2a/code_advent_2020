@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let answers = MultiLineObjects::from_file
         (filename,
-        &mut |set: &mut BTreeSet<char>, line| {
+        |set: &mut BTreeSet<char>, line| {
             for c in line.chars() {
                 set.insert(c);
             }
@@ -16,7 +16,7 @@ pub fn solve_1(filename: &str) -> io::Result<String> {
 pub fn solve_2(filename: &str) -> io::Result<String> {
     let answers = MultiLineObjects::from_file
         (filename,
-        &mut |p2g: &mut Puzzle2Group, line| {
+        |p2g: &mut Puzzle2Group, line: &str| {
             p2g.apply_line(line);
         })?;
     Ok(answers.iter().map(|p2g| p2g.num_selected()).sum::<usize>().to_string())

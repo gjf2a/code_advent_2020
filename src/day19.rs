@@ -206,7 +206,7 @@ impl ParseTable {
                 Status::Yes(future_offsets) => Status::Yes(future_offsets.iter().map(|fut| fut + off).collect()),
                 other => other
             })
-            .fold_first(|acc, val| or(acc, val)).unwrap()
+            .reduce(|acc, val| or(acc, val)).unwrap()
     }
 }
 

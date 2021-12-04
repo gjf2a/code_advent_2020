@@ -1,5 +1,4 @@
 #![feature(map_first_last)]
-#![feature(iterator_fold_self)]
 #[macro_use] extern crate maplit;
 
 pub mod day1;

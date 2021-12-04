@@ -1,7 +1,7 @@
 use std::io;
 use advent_code_lib::all_lines;
 use num::Integer;
-use bare_metal_modulo::ModNum;
+use bare_metal_modulo::{MNum, ModNum};
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
     let (earliest_departure, busses) = puzzle_1_inputs(filename)?;
