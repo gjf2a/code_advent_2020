@@ -57,7 +57,10 @@ impl Tile {
     }
 
     fn all_variants(&self) -> Vec<Tile> {
-        Rotation::into_enum_iter().cartesian_product(Flip::into_enum_iter()).map(|(r, f)| self.rotated(r).flipped(f)).collect()
+        Rotation::into_enum_iter()
+            .cartesian_product(Flip::into_enum_iter())
+            .map(|(r, f)| self.rotated(r).flipped(f))
+            .collect()
     }
 
     fn count(&self, t: char) -> usize {
@@ -309,7 +312,7 @@ impl Constraints {
         self.variants.get(&v.id).unwrap().get(&(v.rotation, v.flip)).unwrap()
     }
 
-    fn get_match(&mut self, v: TileVariant) -> Option<(TileVariant,ManhattanDir)> {
+    fn create_match(&mut self, v: TileVariant) -> Option<(TileVariant, ManhattanDir)> {
         for dir in ManhattanDir::into_enum_iter() {
             let edge2next = self.get_variant(v).edge(dir);
             for m in self.edges2variants.get(&(edge2next, dir.inverse())).unwrap().iter() {
@@ -365,7 +368,7 @@ impl Layout {
         let mut p = Position::new();
         loop {
             tiles.insert(p, selected);
-            let (next, next_dir) = match constraints.get_match(selected) {
+            let (next, next_dir) = match constraints.create_match(selected) {
                 Some(next) => next,
                 None => return Layout::new(tiles, pp.tile_width, pp.tile_height)
             };
