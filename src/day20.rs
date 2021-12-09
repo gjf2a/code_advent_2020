@@ -3,7 +3,7 @@ use smallvec::SmallVec;
 use smallvec::alloc::fmt::Formatter;
 use std::{fmt, io};
 use std::collections::{BTreeMap, BTreeSet};
-use advent_code_lib::{all_lines, ManhattanDir, Position};
+use advent_code_lib::{all_lines, ManhattanDir, Position, DirType};
 use enum_iterator::IntoEnumIterator;
 use itertools::Itertools;
 

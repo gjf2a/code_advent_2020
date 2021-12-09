@@ -1,4 +1,4 @@
-use advent_code_lib::{Position, Dir, for_each_line, normalize_degrees};
+use advent_code_lib::{Position, Dir, for_each_line, normalize_degrees, DirType};
 use std::io;
 
 pub fn solve_1(filename: &str) -> io::Result<String> {
