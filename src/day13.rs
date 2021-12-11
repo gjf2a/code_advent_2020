@@ -41,7 +41,7 @@ fn bus_departure(bus: usize, earliest_departure: usize) -> usize {
 // https://byorgey.wordpress.com/2020/03/03/competitive-programming-in-haskell-modular-arithmetic-part-2/
 fn solve_2_str(input_line: &str) -> i128 {
     ModNum::chinese_remainder_system(
-        &mut input_line
+        input_line
             .split(',')
             .enumerate()
             .filter(|(_, s)| *s != "x")
